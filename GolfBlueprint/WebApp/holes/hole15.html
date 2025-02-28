@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Record Round</title>
+        <link rel="stylesheet" href="../styles/styles.css">
+        <link rel="stylesheet" href="../styles/zones/hole15zones.css">
+    </head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link">Home</a></li>
+                <li><a href="../round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="../index.html#about" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hole-section">
+        <div class="hole-content">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Hole Header -->
+                <div class="hole-header">
+                    <h1 class="hole-title">Hole 15</h1>
+                    <div class="hole-info">
+                        <h2>Par 4</h2>
+                        <h2>436 Yards</h2>
+                    </div>
+                </div>
+    
+                <!-- Score input box -->
+                <div class="score-container">
+                    <h2>Score Input</h2>
+                    <div class="score-input">
+                        <div class="shot-counter">
+                            <p>Click on the interactive map exactly where your full shots and chip shots finished</p>
+                            <br>
+                            <p>Add your putts separately using the buttons below</p>
+                            <br>
+                            <h2>Shot information</h2>
+                            <p>Shot counter: <span id="shotCount">0</span></p>
+                            <button onclick="removeLastShot()" class="control-button">Undo Last Shot</button>
+                        </div>
+                        <div class="putt-input">
+                            <label>Putts: <span id="puttCount">0</span></label>
+                            <div class="putt-controls">
+                                <button onclick="adjustPutts(-1)" class="control-button">-</button>
+                                <button onclick="adjustPutts(1)" class="control-button">+</button>
+                            </div>
+                            <p class="confirmation-message" id="confirmationMessage"></p>
+                        </div>
+                        <div class="total-shots">
+                            <p>Total Score: <span id="totalShots">0</span></p>
+                        </div>
+                        <button onclick="submitScore()" class="submit-button">Save Score</button>
+                        </div>
+                </div>
+            </div>
+    
+            <!-- Right Column - Full Hole View -->
+            <div class="hole-svg-container hole15" id="fullHoleView">
+                <img src="../images/15.svg" alt="Hole 15 Full View" id="holeSVG">
+                
+                <!-- Green Zones -->
+                <div class="zone" id="green" data-zone-name="Green" data-display-name="Green"></div>
+                <div class="zone" id="shortright" data-zone-name="Short Right" data-display-name="Short Right"></div>
+                <div class="zone" id="shortleft" data-zone-name="Short Left" data-display-name="Short Left"></div>
+                <div class="zone" id="longleft" data-zone-name="Long Left" data-display-name="Long Left"></div>
+                <div class="zone" id="longright" data-zone-name="Long Right" data-display-name="Long Right"></div>
+                
+                <!-- Fairway Zones -->
+                <div class="zone" id="shortfairway" data-zone-name="Short Fairway" data-display-name="Fairway"></div>
+                <div class="zone" id="midfairway" data-zone-name="Mid Fairway" data-display-name="Fairway"></div>
+                <div class="zone" id="longfairway" data-zone-name="Long Fairway" data-display-name="Fairway"></div>
+                
+                <!-- Rough Zones -->
+                <div class="zone" id="shortrightrough" data-zone-name="Short Right Rough" data-display-name="Right Rough"></div>
+                <div class="zone" id="shortleftrough" data-zone-name="Short Left Rough" data-display-name="Left Rough"></div>
+                <div class="zone" id="midrightrough" data-zone-name="Mid Right Rough" data-display-name="Right Rough"></div>
+                <div class="zone" id="midleftrough" data-zone-name="Mid Left Rough" data-display-name="Left Rough"></div>
+                <div class="zone" id="longrightrough" data-zone-name="Long Right Rough" data-display-name="Right Rough"></div>
+                <div class="zone" id="longleftrough" data-zone-name="Long Left Rough" data-display-name="Left Rough"></div>
+                
+                <!-- Tree Zones -->
+                <div class="zone" id="shortlefttrees" data-zone-name="Short Left Trees" data-display-name="Trees"></div>
+                <div class="zone" id="midlefttrees" data-zone-name="Mid Left Trees" data-display-name="Trees"></div>
+                <div class="zone" id="longlefttrees" data-zone-name="Long Left Trees" data-display-name="Trees"></div>
+                <div class="zone" id="shortrighttrees" data-zone-name="Short Right Trees" data-display-name="Trees"></div>
+                <div class="zone" id="midrighttrees" data-zone-name="Mid Right Trees" data-display-name="Trees"></div>
+                <div class="zone" id="longrighttrees" data-zone-name="Long Right Trees" data-display-name="Trees"></div>
+                
+                <!-- Outer Rough Zone -->
+                <div class="zone" id="longrightouterrough" data-zone-name="Long Right Outer Rough" data-display-name="Out of Bounds"></div>
+                
+                <!-- Tee Zone -->
+                <div class="zone" id="teebox" data-zone-name="Teebox" data-display-name="Teebox"></div>
+            </div>
+        </div>
+    </section>
+
+    <script src="../scripts/shot-tracking.js"></script>
+</body>
+</html>

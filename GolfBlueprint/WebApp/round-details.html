@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Round</title>
+    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="holeZones.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../WebApp/index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="index.html#about" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Round Details Section -->
+    <section class="date-entry-section">
+        <h1 class="section-title">Record a Round</h1>
+        <form id="roundForm" class="date-form">
+            <div class="form-group">
+                <label for="course-name">Course Name:</label>
+                <input type="text" id="course-name" name="course-name" value="The Kendleshire" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="date-played">Date Played:</label>
+                <input type="date" id="date-played" name="date-played" required>
+            </div>
+
+            <button type="submit" class="submit-button">Begin Scoring</button>
+        </form>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">The Golf Blueprint</p>
+    </footer>
+
+    <script>
+        document.getElementById('roundForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Store round details if needed
+            const roundData = {
+                date: document.getElementById('date-played').value
+            };
+            
+            // Redirect to first hole
+            window.location.href = 'holes/hole1.html';
+        });
+    </script>
+</body>
+</html>

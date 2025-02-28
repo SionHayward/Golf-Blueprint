@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Record Round</title>
+        <link rel="stylesheet" href="../styles/styles.css">
+        <link rel="stylesheet" href="../styles/zones/hole2zones.css">
+    </head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link">Home</a></li>
+                <li><a href="../round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="../index.html#about" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hole-section">
+        <div class="hole-content">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Hole Header -->
+                <div class="hole-header">
+                    <h1 class="hole-title">Hole 2</h1>
+                    <div class="hole-info">
+                        <h2>Par 3</h2>
+                        <h2>148 Yards</h2>
+                    </div>
+                </div>
+    
+                <!-- Score input box -->
+                <div class="score-container">
+                    <h2>Score Input</h2>
+                    <div class="score-input">
+                        <div class="shot-counter">
+                            <p>Click on the interactive map exactly where your full shots and chip shots finished</p>
+                            <br>
+                            <p>Add your putts separately using the buttons below</p>
+                            <br>
+                            <h2>Shot information</h2>
+                            <p>Shot counter: <span id="shotCount">0</span></p>
+                            <button onclick="removeLastShot()" class="control-button">Undo Last Shot</button>
+                        </div>
+                        <div class="putt-input">
+                            <label>Putts: <span id="puttCount">0</span></label>
+                            <div class="putt-controls">
+                                <button onclick="adjustPutts(-1)" class="control-button">-</button>
+                                <button onclick="adjustPutts(1)" class="control-button">+</button>
+                            </div>
+                            <p class="confirmation-message" id="confirmationMessage"></p>
+                        </div>
+                        <div class="total-shots">
+                            <p>Total Score: <span id="totalShots">0</span></p>
+                        </div>
+                        <button onclick="submitScore()" class="submit-button">Save Score</button>
+                        </div>
+                </div>
+            </div>
+    
+            <!-- Right Column - Full Hole View -->
+            <div class="hole-svg-container hole1" id="fullHoleView">
+                <img src="../images/2.svg" alt="Hole 2 Full View" id="holeSVG">
+                
+                <!-- Tee Box -->
+                <div class="zone" id="teebox" data-zone-name="Teebox" data-display-name="Teebox"></div>
+                
+                <!-- Rough -->
+                <div class="zone" id="rough" data-zone-name="Rough" data-display-name="Rough"></div>
+                 
+                <!-- Green Areas -->
+                <div class="zone" id="short-left" data-zone-name="Short Left" data-display-name="Trouble"></div>
+                <div class="zone" id="long-left" data-zone-name="Long Left" data-display-name="Trouble"></div>
+                <div class="zone" id="short-right" data-zone-name="Short Right" data-display-name="Trouble"></div>
+                <div class="zone" id="long-right" data-zone-name="Long Right" data-display-name="Trouble"></div>
+                <div class="zone" id="green" data-zone-name="Green" data-display-name="Green"></div>
+                
+                <!-- Water Hazards -->
+                <div class="zone" id="lake" data-zone-name="Water Hazard" data-display-name="Water"></div>
+                
+                <!-- Trees -->
+                <div class="zone" id="left-trees" data-zone-name="Left Trees" data-display-name="Left Trees"></div>
+                <div class="zone" id="right-trees" data-zone-name="Right Trees" data-display-name="Right Trees"></div>
+
+            </div>
+        </div>
+    </section>
+
+    <script src="../scripts/shot-tracking.js"></script>
+</body>
+</html>

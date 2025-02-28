@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Summary</title>
+    <style>
+        :root {
+            --primary-color: #2a7d2e;
+            --secondary-color: #f5f5f5;
+            --accent-color: #e9b949;
+            --text-color: #333;
+            --light-text: #fff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f5f0;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            padding: 1rem 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+        
+        .nav-logo {
+            color: var(--light-text);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-logo:before {
+            content: "⛳";
+            margin-right: 8px;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-link {
+            color: var(--light-text);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: var(--border-radius);
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .round-summary {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        
+        .round-summary h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .round-summary h1:after {
+            content: "";
+            display: block;
+            width: 100px;
+            height: 3px;
+            background-color: var(--accent-color);
+            margin: 0.5rem auto;
+        }
+        
+        #holeSummaries {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .hole-summary {
+            background-color: var(--secondary-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .hole-summary:hover {
+            transform: translateY(-5px);
+        }
+        
+        .hole-summary h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .hole-summary p {
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+        }
+        
+        .hole-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 6px;
+        }
+        
+        .hole-summary button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .hole-summary button:hover {
+            background-color: #1e5e22;
+        }
+        
+        .total-score {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .total-score span {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-left: 0.5rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .submit-button, .edit-button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+        }
+        
+        .submit-button:hover {
+            background-color: #d6a93e;
+            transform: translateY(-2px);
+        }
+        
+        .edit-button {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .edit-button:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .nav-links {
+                margin-top: 1rem;
+            }
+            
+            .round-summary {
+                padding: 1rem;
+            }
+            
+            #holeSummaries {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="round-summary">
+        <h1>Round Summary</h1>
+        <div id="holeSummaries"></div>
+        <div class="total-score">
+            Total Score: <span id="roundTotal">0</span>
+        </div>
+        <div class="action-buttons">
+            <button onclick="submitRound()" class="submit-button">Submit Round</button>
+            <button onclick="location.href='round-details.html'" class="edit-button">Back to Round Details</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
+            const summariesDiv = document.getElementById('holeSummaries');
+            let total = 0;
+
+            // Hole information for the course
+            const holeInfo = [
+                { number: 1, par: 4, yards: 295 },
+                { number: 2, par: 3, yards: 148 },
+                { number: 3, par: 5, yards: 531 },
+                { number: 4, par: 4, yards: 323 },
+                { number: 5, par: 5, yards: 515 },
+                { number: 6, par: 3, yards: 148 },
+                { number: 7, par: 4, yards: 433 },
+                { number: 8, par: 5, yards: 477 },
+                { number: 9, par: 3, yards: 118 },
+                { number: 10, par: 4, yards: 406 },
+                { number: 11, par: 3, yards: 131 },
+                { number: 12, par: 4, yards: 393 },
+                { number: 13, par: 5, yards: 437 },
+                { number: 14, par: 4, yards: 438 },
+                { number: 15, par: 4, yards: 436 },
+                { number: 16, par: 4, yards: 358 },
+                { number: 17, par: 3, yards: 171 },
+                { number: 18, par: 4, yards: 360 }
+            ];
+            
+            // Display each hole's score
+            for (let i = 1; i <= 18; i++) {
+                const holeData = roundData[`hole${i}`] || {};
+                const score = holeData.holeScore ?? '-'; // Use holeScore instead of totalScore
+                const currentHoleInfo = holeInfo[i-1]; // i starts at 1, but array is 0-indexed
+                
+                const holeDiv = document.createElement('div');
+                holeDiv.className = 'hole-summary';
+                holeDiv.innerHTML = `
+                    <h3>Hole ${i}</h3>
+                    <p class="hole-info">Par ${currentHoleInfo.par} - ${currentHoleInfo.yards} yards</p>
+                    <p>Score: ${score}</p>
+                    <button onclick="editHole(${i})">Edit</button>
+                `;
+                summariesDiv.appendChild(holeDiv);
+                
+                if (typeof holeData.holeScore === 'number') {
+                    total += holeData.holeScore;
+                }
+            }
+
+            // Calculate relative to par
+            const coursePar = 71;
+            const relativeToPar = total - coursePar;
+            const relativeParDisplay = relativeToPar === 0 
+                ? 'E' 
+                : relativeToPar > 0 
+                    ? `+${relativeToPar}` 
+                    : relativeToPar;
+
+            document.getElementById('roundTotal').textContent = `${total} (${relativeParDisplay})`;
+        });
+
+        function editHole(holeNumber) {
+            window.location.href = `holes/hole${holeNumber}.html`;
+        }
+
+        async function submitRound() {
+            const roundData = JSON.parse(localStorage.getItem('currentRound'));
+            const submitButton = document.querySelector('.submit-button');
+            
+            // Change button appearance to indicate activity
+            submitButton.textContent = 'Submitting...';
+            submitButton.disabled = true;
+            
+            try {
+                // Here you would send the data to your database
+                const response = await fetch('/api/submit-round', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(roundData)
+                });
+
+                if (response.ok) {
+                    // Clear the stored round data
+                    localStorage.removeItem('currentRound');
+                    // Redirect to confirmation page
+                    window.location.href = 'round-complete.html';
+                } else {
+                    alert('Error submitting round. Please try again.');
+                    // Reset button
+                    submitButton.textContent = 'Submit Round';
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error submitting round. Please try again.');
+                // Reset button
+                submitButton.textContent = 'Submit Round';
+                submitButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
