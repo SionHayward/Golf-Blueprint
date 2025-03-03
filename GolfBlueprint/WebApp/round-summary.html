@@ -317,42 +317,105 @@
         }
 
         async function submitRound() {
-            const roundData = JSON.parse(localStorage.getItem('currentRound'));
-            const submitButton = document.querySelector('.submit-button');
+    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
+    const submitButton = document.querySelector('.submit-button');
+    
+    // Make sure we have data to submit
+    if (!roundData || Object.keys(roundData).length === 0) {
+        alert('No round data found. Please complete at least one hole.');
+        return;
+    }
+    
+    // Debug - log the round data structure
+    console.log('Round data to be submitted:', roundData);
+    
+    // Get user info
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    console.log('User info:', userInfo);
+    
+    // Change button appearance to indicate activity
+    submitButton.textContent = 'Submitting...';
+    submitButton.disabled = true;
+    
+    try {
+        // Prepare the data
+        const datePlayed = localStorage.getItem('roundDate') || new Date().toISOString().split('T')[0];
+        console.log('Date played:', datePlayed);
+        
+        // Check if we have a valid holeScore for each hole
+        let hasInvalidHoles = false;
+        for (const holeKey in roundData) {
+            const holeData = roundData[holeKey];
+            if (typeof holeData.holeScore !== 'number') {
+                console.error(`Invalid score for ${holeKey}:`, holeData);
+                hasInvalidHoles = true;
+            }
             
-            // Change button appearance to indicate activity
-            submitButton.textContent = 'Submitting...';
-            submitButton.disabled = true;
-            
-            try {
-                // Here you would send the data to your database
-                const response = await fetch('/api/submit-round', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(roundData)
-                });
-
-                if (response.ok) {
-                    // Clear the stored round data
-                    localStorage.removeItem('currentRound');
-                    // Redirect to confirmation page
-                    window.location.href = 'round-complete.html';
-                } else {
-                    alert('Error submitting round. Please try again.');
-                    // Reset button
-                    submitButton.textContent = 'Submit Round';
-                    submitButton.disabled = false;
+            // Check if shots are properly formatted
+            if (holeData.shots) {
+                for (let i = 0; i < holeData.shots.length; i++) {
+                    const shot = holeData.shots[i];
+                    if (!shot.zone) {
+                        console.warn(`Shot ${i+1} on ${holeKey} has no zone:`, shot);
+                    }
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error submitting round. Please try again.');
-                // Reset button
-                submitButton.textContent = 'Submit Round';
-                submitButton.disabled = false;
             }
         }
+        
+        if (hasInvalidHoles) {
+            alert('Some holes have invalid scores. Please check and fix before submitting.');
+            submitButton.textContent = 'Submit Round';
+            submitButton.disabled = false;
+            return;
+        }
+        
+        const completeRoundData = {
+            userId: userInfo.id || userInfo.user_id || 1, // Check both possible properties
+            courseId: 1, // Assuming The Kendleshire is your default course
+            datePlayed: datePlayed,
+            holes: roundData
+        };
+        
+        console.log('Complete round data being sent to server:', completeRoundData);
+        
+        // Send the data to your server
+        const response = await fetch('http://localhost:3000/api/submit-round', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(completeRoundData)
+        });
+
+        const result = await response.json();
+        console.log('Server response:', result);
+        
+        if (response.ok) {
+            // Clear the stored round data
+            localStorage.removeItem('currentRound');
+            localStorage.removeItem('roundDate');
+            
+            // Show success message and redirect
+            alert(`Round successfully saved! Your score: ${document.getElementById('roundTotal').textContent}`);
+            window.location.href = 'index.html';
+        } else {
+            // Show error message with details
+            console.error('Server returned error:', result);
+            alert(`Error submitting round: ${result.error || 'Unknown error'}`);
+            
+            // Reset button
+            submitButton.textContent = 'Submit Round';
+            submitButton.disabled = false;
+        }
+    } catch (error) {
+        console.error('Client error submitting round:', error);
+        alert(`Error submitting round: ${error.message}`);
+        
+        // Reset button
+        submitButton.textContent = 'Submit Round';
+        submitButton.disabled = false;
+    }
+}
     </script>
 </body>
 </html>

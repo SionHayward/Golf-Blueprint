@@ -182,9 +182,6 @@ function submitScore() {
     submitButton.disabled = true;
     submitButton.textContent = 'Saving...';
     
-    // Save to database - ADD THIS LINE
-    saveRoundToDatabase();
-    
     // Get existing round data
     let roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
     
@@ -241,40 +238,4 @@ function isHoleComplete(holeNumber) {
 function getHoleScore(holeNumber) {
     const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
     return roundData[`hole${holeNumber}`]?.holeScore || 0;
-}
-
-function saveRoundToDatabase() {
-    // Get existing round data from localStorage
-    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
-    
-    // Show saving message
-    document.getElementById('confirmationMessage').textContent = 'Saving to database...';
-    
-    // Send data to server
-    fetch('http://localhost:3000/api/save-round', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            holes: roundData
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('confirmationMessage').textContent = 
-                'Round saved to database successfully!';
-            console.log('Round saved to database with ID:', data.roundId);
-        } else {
-            document.getElementById('confirmationMessage').textContent = 
-                'Error saving to database. Data saved locally.';
-            console.error('Database save error:', data.error);
-        }
-    })
-    .catch(error => {
-        document.getElementById('confirmationMessage').textContent = 
-            'Error saving to database. Data saved locally.';
-        console.error('Failed to save to database:', error);
-    });
 }

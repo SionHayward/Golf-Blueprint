@@ -1,211 +1,301 @@
 // server.js
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise'); // Use mysql2/promise for Promise API
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const crypto = require('crypto'); // For password hashing
 
 const app = express();
 const PORT = 3000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-// Database connection
-const db = mysql.createConnection({
+// Database connection pool (created first, before routes)
+const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
   password: 'ripdaniel',
-  database: 'golf_blueprint'
+  database: 'golf_blueprint',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-// Connect to database
-db.connect(err => {
-  if (err) {
-    console.error('Error connecting to database:', err);
-    return;
-  }
-  console.log('Connected to MySQL database');
-});
+// Helper function to hash passwords
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return { salt, hash };
+}
+
+// Helper function to validate password
+function validatePassword(password, storedHash, storedSalt) {
+  const hash = crypto.pbkdf2Sync(password, storedSalt, 1000, 64, 'sha512').toString('hex');
+  return storedHash === hash;
+}
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 
 // Test database connection
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Server is connected to database' });
-});
-
-// Save a round
-app.post('/api/save-round', (req, res) => {
-  const roundData = req.body;
-  console.log('Received round data:', roundData);
-  
-  // Find the default user's ID
-  db.query('SELECT user_id FROM Users WHERE username = "default_user"', (err, users) => {
-    if (err) {
-      console.error('Error finding default user:', err);
-      return res.status(500).json({ error: 'Failed to find default user' });
-    }
-    
-    if (users.length === 0) {
-      // Create default user if it doesn't exist
-      db.query(
-        'INSERT INTO Users (username, email, password_hash) VALUES (?, ?, ?)',
-        ['default_user', 'default@example.com', 'placeholder'],
-        (err, result) => {
-          if (err) {
-            console.error('Error creating default user:', err);
-            return res.status(500).json({ error: 'Failed to create default user' });
-          }
-          
-          const defaultUserId = result.insertId;
-          insertRound(defaultUserId);
-        }
-      );
-    } else {
-      const defaultUserId = users[0].user_id;
-      insertRound(defaultUserId);
-    }
-  });
-  
-  function insertRound(userId) {
-    // Insert round info into database
-    db.query(
-      'INSERT INTO Rounds (user_id, date_played) VALUES (?, ?)',
-      [userId, new Date()],
-      (err, result) => {
-        if (err) {
-          console.error('Error saving round:', err);
-          return res.status(500).json({ error: 'Failed to save round' });
-        }
-        
-        const roundId = result.insertId;
-        
-        // Process each hole in the round
-        const holes = roundData.holes || {};
-        const holePromises = [];
-        
-        Object.keys(holes).forEach(holeKey => {
-          const holeNumber = parseInt(holeKey.replace('hole', ''));
-          const holeData = holes[holeKey];
-          
-          // Find or create the hole
-          const holePromise = new Promise((resolve, reject) => {
-            db.query(
-              'SELECT hole_id FROM Holes WHERE hole_number = ?',
-              [holeNumber],
-              (err, holes) => {
-                if (err) return reject(err);
-                
-                let getHoleId;
-                if (holes.length === 0) {
-                  // Create hole if it doesn't exist
-                  getHoleId = new Promise((resolve, reject) => {
-                    db.query(
-                      'INSERT INTO Holes (hole_number, par, distance_yards) VALUES (?, ?, ?)',
-                      [holeNumber, 4, 400], // Default values
-                      (err, result) => {
-                        if (err) return reject(err);
-                        resolve(result.insertId);
-                      }
-                    );
-                  });
-                } else {
-                  getHoleId = Promise.resolve(holes[0].hole_id);
-                }
-                
-                getHoleId.then(holeId => {
-                  // Save hole score
-                  db.query(
-                    'INSERT INTO RoundHoles (round_id, hole_id, score, putts) VALUES (?, ?, ?, ?)',
-                    [roundId, holeId, holeData.holeScore, holeData.putts],
-                    (err, result) => {
-                      if (err) return reject(err);
-                      
-                      const roundHoleId = result.insertId;
-                      
-                      // Save shots if available
-                      if (holeData.shots && holeData.shots.length > 0) {
-                        const shotPromises = [];
-                        
-                        holeData.shots.forEach((shot, index) => {
-                          // First check if we need to create a zone for this shot
-                          const processShotZone = new Promise((resolve, reject) => {
-                            // Try to find existing zone with this name for this hole
-                            db.query(
-                              'SELECT zone_id FROM Zones WHERE hole_id = ? AND zone_name = ?',
-                              [holeId, shot.zone || 'Default Zone'],
-                              (err, zones) => {
-                                if (err) return reject(err);
-                                
-                                if (zones.length === 0) {
-                                  // Create a new zone
-                                  db.query(
-                                    'INSERT INTO Zones (hole_id, zone_name) VALUES (?, ?)',
-                                    [holeId, shot.zone || 'Default Zone'],
-                                    (err, result) => {
-                                      if (err) return reject(err);
-                                      resolve(result.insertId);
-                                    }
-                                  );
-                                } else {
-                                  resolve(zones[0].zone_id);
-                                }
-                              }
-                            );
-                          });
-                          
-                          // Use the zone to create the shot
-                          const shotPromise = processShotZone.then(zoneId => {
-                            return new Promise((resolve, reject) => {
-                              db.query(
-                                'INSERT INTO Shots (round_hole_id, shot_number, zone_id) VALUES (?, ?, ?)',
-                                [roundHoleId, index + 1, zoneId],
-                                (err, result) => {
-                                  if (err) return reject(err);
-                                  resolve(result.insertId);
-                                }
-                              );
-                            });
-                          });
-                          
-                          shotPromises.push(shotPromise);
-                        });
-                        
-                        Promise.all(shotPromises)
-                          .then(() => resolve())
-                          .catch(err => reject(err));
-                      } else {
-                        resolve();
-                      }
-                    }
-                  );
-                })
-                .catch(err => reject(err));
-              }
-            );
-          });
-          
-          holePromises.push(holePromise);
-        });
-        
-        Promise.all(holePromises)
-          .then(() => {
-            res.json({ 
-              success: true, 
-              roundId: roundId,
-              message: 'Round saved successfully' 
-            });
-          })
-          .catch(err => {
-            console.error('Error saving hole data:', err);
-            res.status(500).json({ error: 'Failed to save hole data' });
-          });
-      }
-    );
+app.get('/api/test', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT 1 as test');
+    res.json({ message: 'Server is connected to database', test: rows[0].test });
+  } catch (err) {
+    console.error('Database test error:', err);
+    res.status(500).json({ error: 'Database connection error' });
   }
 });
 
+// REGISTER endpoint
+app.post('/api/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  
+  // Validate required fields
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Username, email, and password are required' });
+  }
+  
+  try {
+    // Check if user already exists
+    const [users] = await pool.query(
+      'SELECT * FROM Users WHERE email = ? OR username = ?',
+      [email, username]
+    );
+    
+    if (users.length > 0) {
+      const existingUser = users[0];
+      if (existingUser.email === email) {
+        return res.status(400).json({ error: 'Email already in use' });
+      } else {
+        return res.status(400).json({ error: 'Username already taken' });
+      }
+    }
+    
+    // Hash the password
+    const { salt, hash } = hashPassword(password);
+    
+    // Insert new user
+    const [result] = await pool.query(
+      'INSERT INTO Users (username, email, password_hash, salt) VALUES (?, ?, ?, ?)',
+      [username, email, hash, salt]
+    );
+    
+    res.status(201).json({ 
+      message: 'User registered successfully',
+      user_id: result.insertId
+    });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+});
+
+// LOGIN endpoint
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  // Validate required fields
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+  
+  try {
+    // Find user by email
+    const [users] = await pool.query(
+      'SELECT * FROM Users WHERE email = ?',
+      [email]
+    );
+    
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    const user = users[0];
+    
+    // Validate password
+    if (validatePassword(password, user.password_hash, user.salt)) {
+      // Return user info (excluding password)
+      res.json({
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email
+      });
+    } else {
+      res.status(401).json({ error: 'Invalid email or password' });
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// SUBMIT ROUND endpoint
+app.post('/api/submit-round', async (req, res) => {
+  const roundData = req.body;
+  console.log('Received complete round data:', roundData);
+  
+  // Validate the data
+  if (!roundData || !roundData.holes || Object.keys(roundData.holes).length === 0) {
+    return res.status(400).json({ error: 'Invalid round data. No holes found.' });
+  }
+  
+  // Start a transaction to ensure data integrity
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    console.log('Starting transaction to save round');
+    
+    // 1. Insert the Round
+    console.log('Inserting round with user_id:', roundData.userId || 1, 'date_played:', new Date(roundData.datePlayed || Date.now()));
+    const [roundResult] = await connection.execute(
+      'INSERT INTO Rounds (user_id, course_id, date_played) VALUES (?, ?, ?)',
+      [roundData.userId || 1, roundData.courseId || 1, new Date(roundData.datePlayed || Date.now())]
+    );
+    
+    const roundId = roundResult.insertId;
+    console.log('Created round with ID:', roundId);
+    
+    // 2. Process each hole
+    for (const holeKey in roundData.holes) {
+      const holeNumber = parseInt(holeKey.replace('hole', ''));
+      const holeData = roundData.holes[holeKey];
+      
+      console.log(`Processing hole ${holeNumber} with score: ${holeData.holeScore}, putts: ${holeData.putts}`);
+      
+      // Get hole_id
+      const [holes] = await connection.execute(
+        'SELECT hole_id FROM Holes WHERE hole_number = ? AND course_id = ?',
+        [holeNumber, roundData.courseId || 1]
+      );
+      
+      if (holes.length === 0) {
+        throw new Error(`Hole ${holeNumber} not found in the database`);
+      }
+      
+      const holeId = holes[0].hole_id;
+      console.log(`Found hole_id: ${holeId} for hole number ${holeNumber}`);
+      
+      // Insert RoundHole
+      const [roundHoleResult] = await connection.execute(
+        'INSERT INTO RoundHoles (round_id, hole_id, score, putts) VALUES (?, ?, ?, ?)',
+        [roundId, holeId, holeData.holeScore, holeData.putts || 0]
+      );
+      
+      const roundHoleId = roundHoleResult.insertId;
+      console.log(`Created round_hole with ID: ${roundHoleId}`);
+      
+      // Process shots if available
+      if (holeData.shots && holeData.shots.length > 0) {
+        console.log(`Processing ${holeData.shots.length} shots for hole ${holeNumber}`);
+        
+        for (let i = 0; i < holeData.shots.length; i++) {
+          const shot = holeData.shots[i];
+          console.log(`Shot ${i+1} zone: "${shot.zone}"`);
+          
+          // Determine zone type based on the zone name
+          let zoneType = 'Other';
+          const zoneName = shot.zone || 'Out of play';
+          
+          if (zoneName.toLowerCase().includes('fairway')) zoneType = 'Fairway';
+          else if (zoneName.toLowerCase().includes('rough')) zoneType = 'Rough';
+          else if (zoneName.toLowerCase().includes('green')) zoneType = 'Green';
+          else if (zoneName.toLowerCase().includes('bunker') || zoneName.toLowerCase().includes('sand')) zoneType = 'Bunker';
+          else if (zoneName.toLowerCase().includes('water') || zoneName.toLowerCase().includes('lake')) zoneType = 'Water';
+          else if (zoneName.toLowerCase().includes('tree')) zoneType = 'Trees';
+          else if (zoneName.toLowerCase().includes('out of bounds') || zoneName.toLowerCase().includes('ob')) zoneType = 'Out of Bounds';
+          else if (zoneName.toLowerCase().includes('tee')) zoneType = 'Tee';
+          
+          // Find or create zone
+          let zoneId;
+          
+          const [zones] = await connection.execute(
+            'SELECT zone_id FROM Zones WHERE hole_id = ? AND zone_name = ?',
+            [holeId, zoneName]
+          );
+          
+          if (zones.length === 0) {
+            // Create a new zone
+            console.log(`Creating new zone: "${zoneName}" of type: ${zoneType}`);
+            const [zoneResult] = await connection.execute(
+              'INSERT INTO Zones (hole_id, zone_name, zone_type) VALUES (?, ?, ?)',
+              [holeId, zoneName, zoneType]
+            );
+            zoneId = zoneResult.insertId;
+          } else {
+            zoneId = zones[0].zone_id;
+            console.log(`Using existing zone_id: ${zoneId} for zone: "${zoneName}"`);
+          }
+          
+          // Insert shot
+          try {
+            console.log(`Inserting shot with coordinates: x=${shot.x}, y=${shot.y}`);
+            await connection.execute(
+              'INSERT INTO Shots (round_hole_id, shot_number, zone_id, x_coordinate, y_coordinate) VALUES (?, ?, ?, ?, ?)',
+              [roundHoleId, i + 1, zoneId, shot.x || null, shot.y || null]
+            );
+          } catch (shotError) {
+            console.error('Error inserting shot:', shotError);
+            throw new Error(`Failed to insert shot ${i+1} for hole ${holeNumber}: ${shotError.message}`);
+          }
+        }
+      } else {
+        console.log(`No shots data available for hole ${holeNumber}`);
+      }
+    }
+    
+    // Commit the transaction
+    await connection.commit();
+    console.log('Transaction committed successfully');
+    
+    // Return success response
+    res.json({
+      success: true,
+      roundId: roundId,
+      message: 'Round saved successfully'
+    });
+    
+  } catch (error) {
+    // If any error occurs, roll back the transaction
+    console.error('Error in transaction:', error);
+    
+    if (connection) {
+      try {
+        await connection.rollback();
+        console.log('Transaction rolled back due to error');
+      } catch (rollbackError) {
+        console.error('Error rolling back transaction:', rollbackError);
+      }
+    }
+    
+    res.status(500).json({ error: error.message || 'Failed to save round' });
+  } finally {
+    // Release the connection
+    if (connection) {
+      try {
+        connection.release();
+        console.log('Database connection released');
+      } catch (releaseError) {
+        console.error('Error releasing connection:', releaseError);
+      }
+    }
+  }
+});
+
+// Serve static files (AFTER defining all API routes)
+app.use(express.static('/Users/sionhayward/Documents/GitHub/Golf-Blueprint/GolfBlueprint/WebApp'));
+
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  
+  // Test database connection on startup
+  try {
+    const [rows] = await pool.query('SELECT 1');
+    console.log('Connected to MySQL database');
+  } catch (err) {
+    console.error('Error connecting to database:', err);
+  }
 });

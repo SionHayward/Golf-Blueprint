@@ -44,17 +44,23 @@
     </footer>
 
     <script>
-        document.getElementById('roundForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Store round details if needed
-            const roundData = {
-                date: document.getElementById('date-played').value
-            };
-            
-            // Redirect to first hole
-            window.location.href = 'holes/hole1.html';
-        });
+document.getElementById('roundForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Store round details
+    const datePlayed = document.getElementById('date-played').value;
+    
+    // Store the date in localStorage
+    localStorage.setItem('roundDate', datePlayed);
+    
+    // Initialize the currentRound object if it doesn't exist
+    if (!localStorage.getItem('currentRound')) {
+        localStorage.setItem('currentRound', JSON.stringify({}));
+    }
+    
+    // Redirect to first hole
+    window.location.href = 'holes/hole1.html';
+});
     </script>
 </body>
 </html>

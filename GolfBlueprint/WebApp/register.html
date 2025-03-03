@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - The Golf Blueprint</title>
+    <title>Register - The Golf Blueprint</title>
     <style>
         :root {
             --primary-color: #2a7d2e;
@@ -175,72 +175,82 @@
             <a href="index.html" class="nav-logo">The Golf Blueprint</a>
             <ul class="nav-links">
                 <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="register.html" class="nav-link">Register</a></li>
+                <li><a href="login.html" class="nav-link">Login</a></li>
                 <li><a href="#about" class="nav-link">About</a></li>
             </ul>
         </div>
     </nav>
 
-    <!-- Login Form -->
+    <!-- Registration Form -->
     <div class="auth-container">
-        <h1>Login</h1>
+        <h1>Register</h1>
         <div class="error-message" id="errorMessage"></div>
-        <form id="loginForm">
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required minlength="6">
             </div>
-            <button type="submit" class="form-button">Login</button>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+            </div>
+            <button type="submit" class="form-button">Register</button>
         </form>
         <div class="auth-message">
-            <p>Don't have an account? <a href="register.html">Register here</a></p>
+            <p>Already have an account? <a href="login.html">Login here</a></p>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
             const errorMessage = document.getElementById('errorMessage');
             
-            loginForm.addEventListener('submit', async function(e) {
+            registerForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
+                const username = document.getElementById('username').value;
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                // Validate passwords match
+                if (password !== confirmPassword) {
+                    errorMessage.textContent = 'Passwords do not match';
+                    errorMessage.style.display = 'block';
+                    return;
+                }
                 
                 try {
-                    const response = await fetch('/api/login', {
+                    const response = await fetch('/api/register', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ email, password })
+                        body: JSON.stringify({ username, email, password })
                     });
                     
                     const data = await response.json();
                     
                     if (response.ok) {
-                        // Login successful
-                        localStorage.setItem('user', JSON.stringify({
-                            id: data.user_id,
-                            username: data.username,
-                            email: data.email
-                        }));
-                        
-                        // Redirect to home page or dashboard
-                        window.location.href = 'index.html';
+                        // Registration successful, redirect to login
+                        window.location.href = 'login.html?registered=true';
                     } else {
                         // Show error message
-                        errorMessage.textContent = data.error || 'Invalid email or password';
+                        errorMessage.textContent = data.error || 'Registration failed';
                         errorMessage.style.display = 'block';
                     }
                 } catch (error) {
-                    console.error('Login error:', error);
-                    errorMessage.textContent = 'An error occurred during login. Please try again.';
+                    console.error('Registration error:', error);
+                    errorMessage.textContent = 'An error occurred during registration. Please try again.';
                     errorMessage.style.display = 'block';
                 }
             });
