@@ -284,6 +284,122 @@ app.post('/api/submit-round', async (req, res) => {
   }
 });
 
+app.get('/api/hole-stats', async (req, res) => {
+  const { hole, shot, datePeriod } = req.query;
+  
+  if (!hole) {
+    return res.status(400).json({ error: 'Hole number is required' });
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Build the query based on filters
+    let dateFilter = '';
+    if (datePeriod === 'this-year') {
+      dateFilter = 'AND YEAR(r.date_played) = YEAR(CURDATE())';
+    } else if (datePeriod === 'last-5' || datePeriod === 'last-10') {
+      const limit = datePeriod === 'last-5' ? 5 : 10;
+      dateFilter = `AND r.round_id IN (SELECT round_id FROM Rounds ORDER BY date_played DESC LIMIT ${limit})`;
+    }
+    
+    let shotFilter = '';
+    if (shot && shot !== 'all') {
+      shotFilter = `AND s.shot_number = ${parseInt(shot)}`;
+    }
+    
+    // Main query to get zone statistics
+    const query = `
+      SELECT 
+        z.zone_name,
+        AVG(rh.score) AS average_score,
+        COUNT(DISTINCT s.shot_id) AS shot_count,
+        MIN(rh.score) AS best_score,
+        MAX(rh.score) AS worst_score,
+        z.zone_type
+      FROM Shots s
+      JOIN Zones z ON s.zone_id = z.zone_id
+      JOIN RoundHoles rh ON s.round_hole_id = rh.round_hole_id
+      JOIN Holes h ON rh.hole_id = h.hole_id
+      JOIN Rounds r ON rh.round_id = r.round_id
+      WHERE h.hole_number = ?
+      ${shotFilter}
+      ${dateFilter}
+      GROUP BY z.zone_name, z.zone_type
+      ORDER BY average_score ASC
+    `;
+    
+    const [results] = await connection.execute(query, [parseInt(hole)]);
+    
+    // Get coordinates from shot data for visualization
+    const coordQuery = `
+      SELECT 
+        z.zone_name,
+        AVG(s.x_coordinate) AS avg_x,
+        AVG(s.y_coordinate) AS avg_y,
+        COUNT(s.shot_id) AS shot_count
+      FROM Shots s
+      JOIN Zones z ON s.zone_id = z.zone_id
+      JOIN RoundHoles rh ON s.round_hole_id = rh.round_hole_id
+      JOIN Holes h ON rh.hole_id = h.hole_id
+      WHERE h.hole_number = ?
+      ${shotFilter}
+      ${dateFilter}
+      GROUP BY z.zone_name
+    `;
+    
+    const [coordResults] = await connection.execute(coordQuery, [parseInt(hole)]);
+    
+    // Calculate par for the hole
+    const [parResult] = await connection.execute(
+      'SELECT par FROM Holes WHERE hole_number = ? AND course_id = 1',
+      [parseInt(hole)]
+    );
+    
+    const par = parResult[0]?.par || 4;
+    
+    // Combine statistics with coordinates
+    const combinedResults = results.map(stat => {
+      const coords = coordResults.find(c => c.zone_name === stat.zone_name);
+      
+      // Determine if this zone is good, bad, or neutral
+      let status = 'neutral';
+      if (stat.average_score <= par) {
+        status = 'good';
+      } else if (stat.average_score >= par + 1) {
+        status = 'bad';
+      }
+      
+      return {
+        zone: stat.zone_name,
+        zoneType: stat.zone_type,
+        avgScore: parseFloat(stat.average_score),
+        count: parseInt(stat.shot_count),
+        bestScore: parseInt(stat.best_score),
+        worstScore: parseInt(stat.worst_score),
+        x: coords?.avg_x ? parseFloat(coords.avg_x) : 50,
+        y: coords?.avg_y ? parseFloat(coords.avg_y) : 50,
+        status: status
+      };
+    });
+    
+    res.json({
+      holeNumber: parseInt(hole),
+      par: par,
+      zones: combinedResults
+    });
+    
+  } catch (error) {
+    console.error('Error fetching hole statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch hole statistics' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
 // Serve static files (AFTER defining all API routes)
 app.use(express.static('/Users/sionhayward/Documents/GitHub/Golf-Blueprint/GolfBlueprint/WebApp'));
 

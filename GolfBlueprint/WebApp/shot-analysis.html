@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Shot Analysis Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #2a7d2e;
+            --secondary-color: #f5f5f5;
+            --accent-color: #e9b949;
+            --text-color: #333;
+            --light-text: #fff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f5f0;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            padding: 1rem 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+        
+        .nav-logo {
+            color: var(--light-text);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-logo:before {
+            content: "⛳";
+            margin-right: 8px;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-link {
+            color: var(--light-text);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: var(--border-radius);
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .dashboard-header p {
+            color: #666;
+        }
+        
+        .dashboard-filters {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+        }
+        
+        .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 150px;
+        }
+        
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .chart-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            min-height: 400px;
+        }
+        
+        .chart-card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .hole-visualization {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .hole-svg-container {
+            flex: 1;
+            min-height: 450px;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            background-color: #e8f4e8;
+        }
+        
+        .zone-stats {
+            flex: 1;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        
+        .zone-stats table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .zone-stats th, .zone-stats td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .zone-stats th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        .zone-stats tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .score-cell {
+            font-weight: 600;
+        }
+        
+        .zone-highlight {
+            position: absolute;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .zone-highlight:hover {
+            transform: scale(1.1);
+        }
+        
+        .good-zone {
+            background-color: rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+        }
+        
+        .bad-zone {
+            background-color: rgba(244, 67, 54, 0.3);
+            border-color: #F44336;
+        }
+        
+        .neutral-zone {
+            background-color: rgba(255, 193, 7, 0.3);
+            border-color: #FFC107;
+        }
+        
+        .loading-placeholder {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Add this to the <style> section in shot-analysis.html */
+
+/* Zone highlighting */
+.zone {
+    /* Make zones invisible by default but interactive */
+    background-color: transparent;
+    position: absolute;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.zone:hover {
+    /* Light highlight on hover */
+    background-color: rgba(255, 255, 0, 0.15) !important;
+}
+
+.zone-active {
+    /* Stronger highlight when active */
+    background-color: rgba(255, 255, 0, 0.3) !important;
+}
+
+.zone-highlight {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.zone-highlight:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    z-index: 20;
+}
+
+.good-zone {
+    background-color: rgba(76, 175, 80, 0.6);
+    border: 2px solid #4CAF50;
+}
+
+.bad-zone {
+    background-color: rgba(244, 67, 54, 0.6);
+    border: 2px solid #F44336;
+}
+
+.neutral-zone {
+    background-color: rgba(255, 193, 7, 0.6);
+    border: 2px solid #FFC107;
+}
+
+/* Table styling */
+.zone-stats table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.zone-stats th, .zone-stats td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.zone-stats th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.zone-stats tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.zone-stats tr:hover {
+    background-color: #f0f8f0;
+}
+
+.score-cell {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Loading indicator */
+.loading-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-height: 200px;
+    color: #777;
+    font-style: italic;
+}
+        
+        @media (max-width: 992px) {
+            .dashboard-charts {
+                grid-template-columns: 1fr;
+            }
+            
+            .hole-visualization {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="shot-analysis.html" class="nav-link">Shot Analysis</a></li>
+                <li id="auth-link"></li>
+                <li id="user-info" style="display: none; color: white; padding: 0.5rem 1rem;"></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Shot Analysis Dashboard</h1>
+            <p>Analyze your shots to identify patterns and improve your game strategy</p>
+        </div>
+
+        <div class="dashboard-filters">
+            <div class="filter-group">
+                <label for="hole-select">Hole:</label>
+                <select id="hole-select">
+                    <option value="1">Hole 1 - Par 4</option>
+                    <option value="2">Hole 2 - Par 3</option>
+                    <option value="3">Hole 3 - Par 5</option>
+                    <option value="4">Hole 4 - Par 4</option>
+                    <option value="5">Hole 5 - Par 5</option>
+                    <option value="6">Hole 6 - Par 3</option>
+                    <option value="7">Hole 7 - Par 4</option>
+                    <option value="8">Hole 8 - Par 5</option>
+                    <option value="9">Hole 9 - Par 3</option>
+                    <option value="10">Hole 10 - Par 4</option>
+                    <option value="11">Hole 11 - Par 3</option>
+                    <option value="12">Hole 12 - Par 4</option>
+                    <option value="13">Hole 13 - Par 5</option>
+                    <option value="14">Hole 14 - Par 4</option>
+                    <option value="15">Hole 15 - Par 4</option>
+                    <option value="16">Hole 16 - Par 4</option>
+                    <option value="17">Hole 17 - Par 3</option>
+                    <option value="18">Hole 18 - Par 4</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="shot-number">Shot Number:</label>
+                <select id="shot-number">
+                    <option value="all">All Shots</option>
+                    <option value="1">Tee Shot</option>
+                    <option value="2">Approach Shot</option>
+                    <option value="3">Chip/Pitch</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="date-range">Time Period:</label>
+                <select id="date-range">
+                    <option value="all-time">All Time</option>
+                    <option value="this-year">This Year</option>
+                    <option value="last-5">Last 5 Rounds</option>
+                    <option value="last-10">Last 10 Rounds</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="dashboard-charts">
+            <div class="chart-card">
+                <h2>Average Score by Zone</h2>
+                <div id="score-chart" class="chart-container">
+                    <div class="loading-placeholder">
+                        <p>Select a hole to view score data...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2>Shot Distribution</h2>
+                <div id="distribution-chart" class="chart-container">
+                    <div class="loading-placeholder">
+                        <p>Select a hole to view distribution data...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-card hole-visualization">
+                <div class="hole-svg-container" id="hole-visualization">
+                    <img id="hole-image" src="" alt="Hole Image" style="width: 100%; height: 100%; object-fit: contain;">
+                    <!-- Zone highlights will be dynamically added here -->
+                </div>
+                
+                <div class="zone-stats">
+                    <h2>Zone Performance</h2>
+                    <table id="zone-stats-table">
+                        <thead>
+                            <tr>
+                                <th>Zone</th>
+                                <th>Avg. Score</th>
+                                <th>Times Hit</th>
+                                <th>Best Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Example data that will be dynamically replaced -->
+                            <tr>
+                                <td>Green</td>
+                                <td class="score-cell">3.5</td>
+                                <td>8</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>Fairway</td>
+                                <td class="score-cell">4.2</td>
+                                <td>15</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>Long Right</td>
+                                <td class="score-cell">4.0</td>
+                                <td>5</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>Short Right</td>
+                                <td class="score-cell">4.8</td>
+                                <td>6</td>
+                                <td>4</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to update auth navigation
+    function updateAuthNavigation() {
+        const authLinkElement = document.getElementById('auth-link');
+        const userInfoElement = document.getElementById('user-info');
+        
+        // Check if user data exists in localStorage
+        const userData = localStorage.getItem('user');
+        
+        if (userData) {
+            // User is logged in
+            try {
+                const user = JSON.parse(userData);
+                
+                // Update auth link to logout
+                authLinkElement.innerHTML = '<a href="#" class="nav-link" onclick="logout()">Logout</a>';
+                
+                // Display username if available
+                if (user.username) {
+                    userInfoElement.textContent = `Welcome, ${user.username}`;
+                    userInfoElement.style.display = 'block';
+                } else if (user.email) {
+                    userInfoElement.textContent = `Welcome, ${user.email}`;
+                    userInfoElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                // If there's an error, treat as logged out
+                authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+                userInfoElement.style.display = 'none';
+            }
+        } else {
+            // User is logged out
+            authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+            userInfoElement.style.display = 'none';
+        }
+    }
+    
+    // Function to handle logout
+    window.logout = function() {
+        // Remove user data from localStorage
+        localStorage.removeItem('user');
+        
+        // Update navigation
+        updateAuthNavigation();
+        
+        // Optional: Show logout message
+        alert('You have been logged out successfully.');
+        
+        return false; // Prevent default link behavior
+    }
+    
+    // Update auth navigation on page load
+    updateAuthNavigation();
+    
+    // Set up event listeners for filter changes
+    document.getElementById('hole-select').addEventListener('change', updateDashboard);
+    document.getElementById('shot-number').addEventListener('change', updateDashboard);
+    document.getElementById('date-range').addEventListener('change', updateDashboard);
+    
+    // Function to load hole-specific CSS
+    function loadHoleCSS(holeNumber) {
+        // Remove any existing hole-specific CSS
+        const existingLink = document.getElementById('hole-specific-css');
+        if (existingLink) {
+            existingLink.remove();
+        }
+        
+        // Add the new CSS link
+        const link = document.createElement('link');
+        link.id = 'hole-specific-css';
+        link.rel = 'stylesheet';
+        link.href = `styles/zones/hole${holeNumber}zones.css`;
+        document.head.appendChild(link);
+        
+        console.log(`Loaded CSS: styles/zones/hole${holeNumber}zones.css`);
+    }
+    
+    // Function to update the dashboard based on selected filters
+    function updateDashboard() {
+        const holeNumber = document.getElementById('hole-select').value;
+        const shotNumber = document.getElementById('shot-number').value;
+        const dateRange = document.getElementById('date-range').value;
+        
+        console.log(`Updating dashboard for hole ${holeNumber}, shot ${shotNumber}, period ${dateRange}`);
+        
+        // Update hole image
+        const holeImage = document.getElementById('hole-image');
+        holeImage.src = `images/${holeNumber}.svg`;
+        holeImage.alt = `Hole ${holeNumber}`;
+        
+        // Load hole-specific CSS
+        loadHoleCSS(holeNumber);
+        
+        // Add hole-specific class to visualization container
+        const container = document.getElementById('hole-visualization');
+        container.className = `hole-svg-container hole${holeNumber}`;
+        
+        // Add all the zone elements (they'll be invisible but can be highlighted)
+        addZoneElements(container, holeNumber);
+        
+        // Fetch data from API
+        fetchHoleData(holeNumber, shotNumber, dateRange);
+    }
+    
+    // Function to add zone elements to the container
+    function addZoneElements(container, holeNumber) {
+        // Clear existing zones first
+        const existingZones = container.querySelectorAll('.zone');
+        existingZones.forEach(zone => zone.remove());
+        
+        // For hole 1, add all the zones from your CSS
+        if (holeNumber === '1') {
+            const zoneIds = [
+                'teebox', 'short-fairway', 'mid-fairway', 'long-fairway',
+                'short-right-rough', 'short-left-rough', 'mid-right-rough', 'mid-left-rough',
+                'long-right-rough', 'long-left-rough', 'green', 'short-left', 'short-right',
+                'long-left', 'long-right', 'lake', 'left-green-side', 'mid-left-trees',
+                'short-left-trees', 'right-green-side', 'outer-rough'
+            ];
+            
+            zoneIds.forEach(id => {
+                const zone = document.createElement('div');
+                zone.id = id;
+                zone.className = 'zone';
+                zone.dataset.zoneName = idToZoneName(id);
+                container.appendChild(zone);
+            });
+        }
+        // Add other holes similar to the above
+        // ...
+    }
+    
+    // Convert ID to zone name
+    function idToZoneName(id) {
+        // Convert hyphenated IDs to properly formatted zone names
+        return id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+    
+    // Convert zone name to ID
+    function zoneNameToId(name) {
+        // Convert zone names from database to CSS IDs
+        return name.toLowerCase().replace(/ /g, '-');
+    }
+    
+    // Function to fetch hole data from API
+    function fetchHoleData(holeNumber, shotNumber, dateRange) {
+        // Show loading state
+        document.getElementById('score-chart').innerHTML = '<div class="loading-placeholder"><p>Loading data...</p></div>';
+        document.getElementById('distribution-chart').innerHTML = '<div class="loading-placeholder"><p>Loading data...</p></div>';
+        
+        // Fetch data from API
+        fetch(`/api/hole-stats?hole=${holeNumber}&shot=${shotNumber}&datePeriod=${dateRange}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('API response:', data);
+                
+                if (data && data.zones && data.zones.length > 0) {
+                    // Update visualizations
+                    updateZoneHighlights(data.zones, holeNumber);
+                    updateZoneStatsTable(data.zones);
+                    updateScoreChart(data.zones, data.par);
+                    updateDistributionChart(data.zones);
+                } else {
+                    // Handle no data case
+                    document.getElementById('score-chart').innerHTML = 
+                        '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
+                    document.getElementById('distribution-chart').innerHTML = 
+                        '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
+                    updateZoneHighlights([], holeNumber);
+                    updateZoneStatsTable([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                document.getElementById('score-chart').innerHTML = 
+                    `<div class="loading-placeholder"><p>Error: ${error.message}</p></div>`;
+                document.getElementById('distribution-chart').innerHTML = 
+                    `<div class="loading-placeholder"><p>Error: ${error.message}</p></div>`;
+            });
+    }
+    
+    // Update zone highlights
+    function updateZoneHighlights(zoneData, holeNumber) {
+        const container = document.getElementById('hole-visualization');
+        
+        // Remove existing highlights
+        const existingHighlights = container.querySelectorAll('.zone-highlight');
+        existingHighlights.forEach(el => el.remove());
+        
+        // If no data, return
+        if (!zoneData || zoneData.length === 0) return;
+        
+        // Add zone highlights
+        zoneData.forEach(zone => {
+            // Create highlight
+            const highlight = document.createElement('div');
+            highlight.className = `zone-highlight ${zone.status}-zone`;
+            
+            // Set position
+            highlight.style.left = `${zone.x}%`;
+            highlight.style.top = `${zone.y}%`;
+            highlight.style.width = '40px';
+            highlight.style.height = '40px';
+            
+            // Set tooltip
+            highlight.title = `${zone.zone}: Avg. Score ${zone.avgScore.toFixed(1)} (${zone.count} shots)`;
+            
+            // Find the corresponding zone element
+            const zoneId = zoneNameToId(zone.zone);
+            highlight.dataset.zoneId = zoneId;
+            
+            // Add click handler
+            highlight.addEventListener('click', () => {
+                highlightTableRow(zone.zone);
+                highlightZoneElement(zoneId);
+            });
+            
+            container.appendChild(highlight);
+        });
+    }
+    
+    // Highlight a table row
+    function highlightTableRow(zoneName) {
+        const table = document.getElementById('zone-stats-table');
+        const rows = table.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const rowZone = row.querySelector('td').textContent;
+            if (rowZone === zoneName) {
+                row.style.backgroundColor = '#e9f7e9';
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                row.style.backgroundColor = '';
+            }
+        });
+    }
+    
+    // Highlight a zone element
+    function highlightZoneElement(zoneId) {
+        const zoneElement = document.getElementById(zoneId);
+        if (!zoneElement) return;
+        
+        // Add temporary class to highlight the zone
+        zoneElement.classList.add('zone-active');
+        
+        // Flash effect
+        zoneElement.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+        setTimeout(() => {
+            zoneElement.style.backgroundColor = '';
+            zoneElement.classList.remove('zone-active');
+        }, 1500);
+    }
+    
+    // Update zone stats table
+    function updateZoneStatsTable(zoneData) {
+        const tableBody = document.querySelector('#zone-stats-table tbody');
+        tableBody.innerHTML = '';
+        
+        if (!zoneData || zoneData.length === 0) {
+            return;
+        }
+        
+        // Sort zones by average score (best to worst)
+        zoneData.sort((a, b) => a.avgScore - b.avgScore);
+        
+        zoneData.forEach(zone => {
+            const row = document.createElement('tr');
+            
+            const zoneCell = document.createElement('td');
+            zoneCell.textContent = zone.zone;
+            
+            const scoreCell = document.createElement('td');
+            scoreCell.className = 'score-cell';
+            scoreCell.textContent = zone.avgScore.toFixed(1);
+            
+            const countCell = document.createElement('td');
+            countCell.textContent = zone.count;
+            
+            const bestCell = document.createElement('td');
+            bestCell.textContent = zone.bestScore;
+            
+            row.appendChild(zoneCell);
+            row.appendChild(scoreCell);
+            row.appendChild(countCell);
+            row.appendChild(bestCell);
+            
+            // Add click handler to highlight the zone
+            row.addEventListener('click', () => {
+                highlightZoneElement(zoneNameToId(zone.zone));
+                
+                // Highlight only this row
+                const rows = tableBody.querySelectorAll('tr');
+                rows.forEach(r => {
+                    if (r === row) {
+                        r.style.backgroundColor = '#e9f7e9';
+                    } else {
+                        r.style.backgroundColor = '';
+                    }
+                });
+            });
+            
+            tableBody.appendChild(row);
+        });
+    }
+    
+    // Update score chart
+    function updateScoreChart(zoneData, par) {
+        const container = document.getElementById('score-chart');
+        
+        if (!zoneData || zoneData.length === 0) {
+            container.innerHTML = '<div class="loading-placeholder"><p>No data available</p></div>';
+            return;
+        }
+        
+        // Calculate total average
+        let totalScore = 0;
+        let totalShots = 0;
+        zoneData.forEach(zone => {
+            totalScore += zone.avgScore * zone.count;
+            totalShots += zone.count;
+        });
+        
+        const averageScore = totalShots > 0 ? (totalScore / totalShots).toFixed(2) : 'N/A';
+        const relativeToPar = totalShots > 0 ? (totalScore / totalShots - par).toFixed(2) : 'N/A';
+        
+        // Create a simple chart for now
+        container.innerHTML = `
+            <div style="padding: 20px; text-align: center;">
+                <h3>Average Score: ${averageScore}</h3>
+                <p>Relative to Par: ${relativeToPar > 0 ? '+' : ''}${relativeToPar}</p>
+                <p>Based on ${totalShots} total shots</p>
+                <div style="margin-top: 20px;">
+                    <p>Best zones (lowest average scores):</p>
+                    <ul style="list-style: none; padding: 0;">
+                        ${zoneData.slice(0, 3).map(zone => 
+                            `<li style="margin: 5px 0;"><strong>${zone.zone}</strong>: ${zone.avgScore.toFixed(1)}</li>`
+                        ).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Update distribution chart
+    function updateDistributionChart(zoneData) {
+        const container = document.getElementById('distribution-chart');
+        
+        if (!zoneData || zoneData.length === 0) {
+            container.innerHTML = '<div class="loading-placeholder"><p>No data available</p></div>';
+            return;
+        }
+        
+        // Calculate total shots
+        const totalShots = zoneData.reduce((sum, zone) => sum + zone.count, 0);
+        
+        // Sort by shot count (most frequent first)
+        const sortedData = [...zoneData].sort((a, b) => b.count - a.count);
+        
+        // Create simple bar chart
+        container.innerHTML = `
+            <div style="padding: 20px;">
+                <h3>Shot Distribution</h3>
+                <div style="margin-top: 20px;">
+                    ${sortedData.slice(0, 5).map(zone => {
+                        const percentage = ((zone.count / totalShots) * 100).toFixed(1);
+                        return `
+                            <div style="margin: 10px 0;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span>${zone.zone}</span>
+                                    <span>${zone.count} shots (${percentage}%)</span>
+                                </div>
+                                <div style="height: 20px; background-color: #e0e0e0; border-radius: 4px; margin-top: 5px;">
+                                    <div style="height: 100%; width: ${percentage}%; background-color: var(--primary-color); border-radius: 4px;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Initialize the dashboard
+    updateDashboard();
+});
+    </script>
+</body>
+</html>
