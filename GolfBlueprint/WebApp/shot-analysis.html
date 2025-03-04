@@ -4,338 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Shot Analysis Dashboard</title>
-    <style>
-        :root {
-            --primary-color: #2a7d2e;
-            --secondary-color: #f5f5f5;
-            --accent-color: #e9b949;
-            --text-color: #333;
-            --light-text: #fff;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --border-radius: 8px;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f0f5f0;
-            color: var(--text-color);
-            line-height: 1.6;
-        }
-        
-        .navbar {
-            background-color: var(--primary-color);
-            color: var(--light-text);
-            padding: 1rem 0;
-            box-shadow: var(--shadow);
-        }
-        
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 2rem;
-        }
-        
-        .nav-logo {
-            color: var(--light-text);
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-        }
-        
-        .nav-logo:before {
-            content: "⛳";
-            margin-right: 8px;
-        }
-        
-        .nav-links {
-            display: flex;
-            list-style: none;
-        }
-        
-        .nav-link {
-            color: var(--light-text);
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-            border-radius: var(--border-radius);
-        }
-        
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-        
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        .dashboard-header h1 {
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-        
-        .dashboard-header p {
-            color: #666;
-        }
-        
-        .dashboard-filters {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .filter-group label {
-            font-weight: 600;
-        }
-        
-        .filter-group select {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-width: 150px;
-        }
-        
-        .dashboard-charts {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-        
-        .chart-card {
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 1.5rem;
-            min-height: 400px;
-        }
-        
-        .chart-card h2 {
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 0.5rem;
-        }
-        
-        .hole-visualization {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: 2rem;
-        }
-        
-        .hole-svg-container {
-            flex: 1;
-            min-height: 450px;
-            position: relative;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            background-color: #e8f4e8;
-        }
-        
-        .zone-stats {
-            flex: 1;
-            max-height: 450px;
-            overflow-y: auto;
-        }
-        
-        .zone-stats table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .zone-stats th, .zone-stats td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .zone-stats th {
-            background-color: #f5f5f5;
-            font-weight: 600;
-        }
-        
-        .zone-stats tr:hover {
-            background-color: #f9f9f9;
-        }
-        
-        .score-cell {
-            font-weight: 600;
-        }
-        
-        .zone-highlight {
-            position: absolute;
-            border: 2px solid transparent;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .zone-highlight:hover {
-            transform: scale(1.1);
-        }
-        
-        .good-zone {
-            background-color: rgba(76, 175, 80, 0.3);
-            border-color: #4CAF50;
-        }
-        
-        .bad-zone {
-            background-color: rgba(244, 67, 54, 0.3);
-            border-color: #F44336;
-        }
-        
-        .neutral-zone {
-            background-color: rgba(255, 193, 7, 0.3);
-            border-color: #FFC107;
-        }
-        
-        .loading-placeholder {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            color: #666;
-            font-style: italic;
-        }
-
-        /* Add this to the <style> section in shot-analysis.html */
-
-/* Zone highlighting */
-.zone {
-    /* Make zones invisible by default but interactive */
-    background-color: transparent;
-    position: absolute;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.zone:hover {
-    /* Light highlight on hover */
-    background-color: rgba(255, 255, 0, 0.15) !important;
-}
-
-.zone-active {
-    /* Stronger highlight when active */
-    background-color: rgba(255, 255, 0, 0.3) !important;
-}
-
-.zone-highlight {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.zone-highlight:hover {
-    transform: translate(-50%, -50%) scale(1.2);
-    z-index: 20;
-}
-
-.good-zone {
-    background-color: rgba(76, 175, 80, 0.6);
-    border: 2px solid #4CAF50;
-}
-
-.bad-zone {
-    background-color: rgba(244, 67, 54, 0.6);
-    border: 2px solid #F44336;
-}
-
-.neutral-zone {
-    background-color: rgba(255, 193, 7, 0.6);
-    border: 2px solid #FFC107;
-}
-
-/* Table styling */
-.zone-stats table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.zone-stats th, .zone-stats td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-
-.zone-stats th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-}
-
-.zone-stats tr {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.zone-stats tr:hover {
-    background-color: #f0f8f0;
-}
-
-.score-cell {
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-/* Loading indicator */
-.loading-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    min-height: 200px;
-    color: #777;
-    font-style: italic;
-}
-        
-        @media (max-width: 992px) {
-            .dashboard-charts {
-                grid-template-columns: 1fr;
-            }
-            
-            .hole-visualization {
-                flex-direction: column;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="styles/zone-performance.css">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -346,8 +16,8 @@
                 <li><a href="index.html" class="nav-link">Home</a></li>
                 <li><a href="round-details.html" class="nav-link">Record Round</a></li>
                 <li><a href="shot-analysis.html" class="nav-link">Shot Analysis</a></li>
-                <li id="auth-link"></li>
-                <li id="user-info" style="display: none; color: white; padding: 0.5rem 1rem;"></li>
+                <li id="auth-link"><a href="login.html" class="nav-link">Login</a></li>
+                <li id="profile-link" style="display: none;"><a href="profile.html" class="nav-link">My Profile</a></li>
             </ul>
         </div>
     </nav>
@@ -423,7 +93,7 @@
             
             <div class="chart-card hole-visualization">
                 <div class="hole-svg-container" id="hole-visualization">
-                    <img id="hole-image" src="" alt="Hole Image" style="width: 100%; height: 100%; object-fit: contain;">
+                    <img id="hole-image" src="" alt="Hole Image">
                     <!-- Zone highlights will be dynamically added here -->
                 </div>
                 
@@ -471,62 +141,12 @@
         </div>
     </div>
 
+    <!-- Load auth.js first -->
+    <script src="scripts/auth.js"></script>
+    
+    <!-- Then load dashboard-specific script -->
     <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Function to update auth navigation
-    function updateAuthNavigation() {
-        const authLinkElement = document.getElementById('auth-link');
-        const userInfoElement = document.getElementById('user-info');
-        
-        // Check if user data exists in localStorage
-        const userData = localStorage.getItem('user');
-        
-        if (userData) {
-            // User is logged in
-            try {
-                const user = JSON.parse(userData);
-                
-                // Update auth link to logout
-                authLinkElement.innerHTML = '<a href="#" class="nav-link" onclick="logout()">Logout</a>';
-                
-                // Display username if available
-                if (user.username) {
-                    userInfoElement.textContent = `Welcome, ${user.username}`;
-                    userInfoElement.style.display = 'block';
-                } else if (user.email) {
-                    userInfoElement.textContent = `Welcome, ${user.email}`;
-                    userInfoElement.style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                // If there's an error, treat as logged out
-                authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
-                userInfoElement.style.display = 'none';
-            }
-        } else {
-            // User is logged out
-            authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
-            userInfoElement.style.display = 'none';
-        }
-    }
-    
-    // Function to handle logout
-    window.logout = function() {
-        // Remove user data from localStorage
-        localStorage.removeItem('user');
-        
-        // Update navigation
-        updateAuthNavigation();
-        
-        // Optional: Show logout message
-        alert('You have been logged out successfully.');
-        
-        return false; // Prevent default link behavior
-    }
-    
-    // Update auth navigation on page load
-    updateAuthNavigation();
-    
     // Set up event listeners for filter changes
     document.getElementById('hole-select').addEventListener('change', updateDashboard);
     document.getElementById('shot-number').addEventListener('change', updateDashboard);
@@ -617,6 +237,116 @@ document.addEventListener('DOMContentLoaded', function() {
         return name.toLowerCase().replace(/ /g, '-');
     }
     
+    // Enhanced zone visualization for shot analysis
+    function updateZonePerformanceVisualization(zoneData, holeNumber) {
+        const container = document.getElementById('hole-visualization');
+        
+        // Reset any existing zone styling
+        const zones = container.querySelectorAll('.zone');
+        zones.forEach(zone => {
+            zone.style.backgroundColor = '';
+            zone.classList.remove('good-zone', 'bad-zone', 'neutral-zone');
+            zone.style.opacity = '0';
+        });
+        
+        // If no data, return
+        if (!zoneData || zoneData.length === 0) return;
+        
+        // Find the range of scores to normalize the coloring
+        let minScore = Infinity;
+        let maxScore = -Infinity;
+        
+        zoneData.forEach(zone => {
+            if (zone.avgScore < minScore) minScore = zone.avgScore;
+            if (zone.avgScore > maxScore) maxScore = zone.avgScore;
+        });
+        
+        // Calculate median score as reference point
+        const scores = zoneData.map(zone => zone.avgScore);
+        scores.sort((a, b) => a - b);
+        const medianScore = scores.length % 2 === 0 
+            ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
+            : scores[Math.floor(scores.length/2)];
+        
+        // Apply coloring to each zone
+        zoneData.forEach(zone => {
+            // Convert zone name to id format
+            const zoneId = zoneNameToId(zone.zone);
+            const zoneElement = document.getElementById(zoneId);
+            
+            if (zoneElement) {
+                // Determine zone status (good, neutral, bad)
+                let zoneStatus;
+                let opacity;
+                
+                // Calculate performance relative to median
+                const scoreDiff = zone.avgScore - medianScore;
+                const normalizedDiff = scoreDiff / (maxScore - minScore) * 2; // Scale to -1 to 1 range
+                
+                if (zone.avgScore < medianScore - (maxScore - minScore) * 0.15) {
+                    zoneStatus = 'good-zone';
+                    // Darker green for better zones
+                    opacity = 0.4 + Math.min(0.5, Math.abs(normalizedDiff) * 0.5);
+                    zoneElement.style.backgroundColor = `rgba(76, 175, 80, ${opacity})`;
+                } else if (zone.avgScore > medianScore + (maxScore - minScore) * 0.15) {
+                    zoneStatus = 'bad-zone';
+                    // Darker red for worse zones
+                    opacity = 0.4 + Math.min(0.5, Math.abs(normalizedDiff) * 0.5);
+                    zoneElement.style.backgroundColor = `rgba(244, 67, 54, ${opacity})`;
+                } else {
+                    zoneStatus = 'neutral-zone';
+                    opacity = 0.3;
+                    zoneElement.style.backgroundColor = `rgba(255, 193, 7, ${opacity})`;
+                }
+                
+                // Add status class
+                zoneElement.classList.add(zoneStatus);
+                
+                // Make zone visible (as it starts with opacity 0)
+                zoneElement.style.opacity = '1';
+                
+                // Add tooltip
+                zoneElement.title = `${zone.zone}: Avg. Score ${zone.avgScore.toFixed(1)} (${zone.count} shots)`;
+                
+                // Add click handler
+                zoneElement.addEventListener('click', () => {
+                    highlightTableRow(zone.zone);
+                });
+            }
+        });
+        
+        // Add legend
+        addPerformanceLegend(container);
+    }
+
+    // Add a legend explaining the colors
+    function addPerformanceLegend(container) {
+        // Remove existing legend if present
+        const existingLegend = document.getElementById('zone-legend');
+        if (existingLegend) existingLegend.remove();
+        
+        const legend = document.createElement('div');
+        legend.id = 'zone-legend';
+        legend.className = 'zone-legend';
+        legend.innerHTML = `
+            <div class="legend-title">Zone Performance</div>
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: rgba(76, 175, 80, 0.6);"></span>
+                <span class="legend-label">Best Scoring Areas</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: rgba(255, 193, 7, 0.4);"></span>
+                <span class="legend-label">Average Scoring Areas</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: rgba(244, 67, 54, 0.6);"></span>
+                <span class="legend-label">Challenging Areas</span>
+            </div>
+        `;
+        
+        container.appendChild(legend);
+    }
+    
     // Function to fetch hole data from API
     function fetchHoleData(holeNumber, shotNumber, dateRange) {
         // Show loading state
@@ -636,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (data && data.zones && data.zones.length > 0) {
                     // Update visualizations
-                    updateZoneHighlights(data.zones, holeNumber);
+                    updateZonePerformanceVisualization(data.zones, holeNumber);
                     updateZoneStatsTable(data.zones);
                     updateScoreChart(data.zones, data.par);
                     updateDistributionChart(data.zones);
@@ -646,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
                     document.getElementById('distribution-chart').innerHTML = 
                         '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
-                    updateZoneHighlights([], holeNumber);
+                    updateZonePerformanceVisualization([], holeNumber);
                     updateZoneStatsTable([]);
                 }
             })
@@ -659,46 +389,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // Update zone highlights
-    function updateZoneHighlights(zoneData, holeNumber) {
-        const container = document.getElementById('hole-visualization');
-        
-        // Remove existing highlights
-        const existingHighlights = container.querySelectorAll('.zone-highlight');
-        existingHighlights.forEach(el => el.remove());
-        
-        // If no data, return
-        if (!zoneData || zoneData.length === 0) return;
-        
-        // Add zone highlights
-        zoneData.forEach(zone => {
-            // Create highlight
-            const highlight = document.createElement('div');
-            highlight.className = `zone-highlight ${zone.status}-zone`;
-            
-            // Set position
-            highlight.style.left = `${zone.x}%`;
-            highlight.style.top = `${zone.y}%`;
-            highlight.style.width = '40px';
-            highlight.style.height = '40px';
-            
-            // Set tooltip
-            highlight.title = `${zone.zone}: Avg. Score ${zone.avgScore.toFixed(1)} (${zone.count} shots)`;
-            
-            // Find the corresponding zone element
-            const zoneId = zoneNameToId(zone.zone);
-            highlight.dataset.zoneId = zoneId;
-            
-            // Add click handler
-            highlight.addEventListener('click', () => {
-                highlightTableRow(zone.zone);
-                highlightZoneElement(zoneId);
-            });
-            
-            container.appendChild(highlight);
-        });
-    }
-    
     // Highlight a table row
     function highlightTableRow(zoneName) {
         const table = document.getElementById('zone-stats-table');
@@ -709,8 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rowZone === zoneName) {
                 row.style.backgroundColor = '#e9f7e9';
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('highlighted');
             } else {
                 row.style.backgroundColor = '';
+                row.classList.remove('highlighted');
             }
         });
     }
@@ -722,12 +414,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add temporary class to highlight the zone
         zoneElement.classList.add('zone-active');
+        zoneElement.classList.add('pulse-animation');
         
         // Flash effect
-        zoneElement.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
         setTimeout(() => {
-            zoneElement.style.backgroundColor = '';
             zoneElement.classList.remove('zone-active');
+            zoneElement.classList.remove('pulse-animation');
         }, 1500);
     }
     
@@ -766,14 +458,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add click handler to highlight the zone
             row.addEventListener('click', () => {
-                highlightZoneElement(zoneNameToId(zone.zone));
+                const zoneId = zoneNameToId(zone.zone);
+                highlightZoneElement(zoneId);
                 
                 // Highlight only this row
                 const rows = tableBody.querySelectorAll('tr');
                 rows.forEach(r => {
                     if (r === row) {
+                        r.classList.add('highlighted');
                         r.style.backgroundColor = '#e9f7e9';
                     } else {
+                        r.classList.remove('highlighted');
                         r.style.backgroundColor = '';
                     }
                 });

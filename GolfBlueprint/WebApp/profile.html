@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - The Golf Blueprint</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="shot-analysis.html" class="nav-link">Shot Analysis</a></li>
+                <li id="auth-link"><a href="login.html" class="nav-link">Login</a></li>
+                <li id="profile-link" style="display: none;"><a href="profile.html" class="nav-link">My Profile</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Profile Container -->
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="profile-avatar" id="profile-avatar">U</div>
+            <div class="profile-info">
+                <h1 id="user-name">User Name</h1>
+                <p id="user-email">user@example.com</p>
+            </div>
+        </div>
+        
+        <div class="profile-stats">
+            <div class="stat-card">
+                <h3 id="rounds-played">0</h3>
+                <p>Rounds Played</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="average-score">0</h3>
+                <p>Average Score</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="best-score">0</h3>
+                <p>Best Score</p>
+            </div>
+        </div>
+        
+        <div class="recent-rounds">
+            <h2>Recent Rounds</h2>
+            <ul class="round-list" id="recent-rounds-list">
+                <!-- Rounds will be populated dynamically -->
+                <li class="round-item">
+                    <span class="round-date">Loading...</span>
+                    <span class="round-score"></span>
+                    <button class="view-button" disabled>View</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize auth navigation
+            updateAuthNavigation();
+            
+            // Get user data from localStorage
+            const userData = localStorage.getItem('user');
+            
+            if (userData) {
+                const user = JSON.parse(userData);
+                
+                // Update profile information
+                document.getElementById('user-name').textContent = user.username || 'Golfer';
+                document.getElementById('user-email').textContent = user.email || '';
+                
+                // Set avatar initial
+                const avatar = document.getElementById('profile-avatar');
+                if (user.username) {
+                    avatar.textContent = user.username.charAt(0).toUpperCase();
+                }
+                
+                // Fetch user stats and rounds
+                fetchUserData(user.id || user.user_id);
+            } else {
+                // Redirect to login if not logged in
+                window.location.href = 'login.html';
+            }
+        });
+        
+        async function fetchUserData(userId) {
+            try {
+                // Fetch user stats
+                const statsResponse = await fetch(`/api/user-stats/${userId}`);
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    
+                    document.getElementById('rounds-played').textContent = stats.roundsPlayed || 0;
+                    document.getElementById('average-score').textContent = stats.averageScore?.toFixed(1) || 0;
+                    document.getElementById('best-score').textContent = stats.bestScore || 0;
+                }
+                
+                // Fetch recent rounds
+                const roundsResponse = await fetch(`/api/user-rounds/${userId}?limit=5`);
+                if (roundsResponse.ok) {
+                    const rounds = await roundsResponse.json();
+                    populateRecentRounds(rounds);
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                // Show demo data if API calls fail
+                showDemoData();
+            }
+        }
+        
+        function populateRecentRounds(rounds) {
+            const roundsList = document.getElementById('recent-rounds-list');
+            roundsList.innerHTML = '';
+            
+            if (!rounds || rounds.length === 0) {
+                roundsList.innerHTML = '<li class="round-item">No rounds recorded yet.</li>';
+                return;
+            }
+            
+            rounds.forEach(round => {
+                const li = document.createElement('li');
+                li.className = 'round-item';
+                
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'round-date';
+                dateSpan.textContent = new Date(round.datePlayed).toLocaleDateString();
+                
+                const scoreSpan = document.createElement('span');
+                scoreSpan.className = 'round-score';
+                scoreSpan.textContent = `Score: ${round.totalScore}`;
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'view-button';
+                viewBtn.textContent = 'View';
+                viewBtn.addEventListener('click', () => {
+                    window.location.href = `round-details.html?id=${round.id}`;
+                });
+                
+                li.appendChild(dateSpan);
+                li.appendChild(scoreSpan);
+                li.appendChild(viewBtn);
+                
+                roundsList.appendChild(li);
+            });
+        }
+        
+        function showDemoData() {
+            // Display some demo data if API calls fail
+            document.getElementById('rounds-played').textContent = '12';
+            document.getElementById('average-score').textContent = '87.5';
+            document.getElementById('best-score').textContent = '82';
+            
+            const demoRounds = [
+                { id: 1, datePlayed: '2025-02-15', totalScore: 85 },
+                { id: 2, datePlayed: '2025-02-08', totalScore: 88 },
+                { id: 3, datePlayed: '2025-01-25', totalScore: 82 }
+            ];
+            
+            populateRecentRounds(demoRounds);
+        }
+        
+        // Auth management function
+        function updateAuthNavigation() {
+            const authLinkElement = document.getElementById('auth-link');
+            const profileLinkElement = document.getElementById('profile-link');
+            
+            // Check if user data exists in localStorage
+            const userData = localStorage.getItem('user');
+            
+            if (userData) {
+                // User is logged in
+                try {
+                    const user = JSON.parse(userData);
+                    
+                    // Update auth link to logout
+                    authLinkElement.innerHTML = '<a href="#" class="nav-link" onclick="logout()">Logout</a>';
+                    
+                    // Show profile link
+                    profileLinkElement.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Error parsing user data:', error);
+                    // If there's an error, treat as logged out
+                    authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+                    profileLinkElement.style.display = 'none';
+                }
+            } else {
+                // User is logged out
+                authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+                profileLinkElement.style.display = 'none';
+            }
+        }
+        
+        // Function to handle logout
+        function logout() {
+            // Remove user data from localStorage
+            localStorage.removeItem('user');
+            
+            // Redirect to login page
+            window.location.href = 'login.html';
+            
+            return false; // Prevent default link behavior
+        }
+    </script>
+    <script src="scripts/auth.js"></script>
+</body>
+</html>
