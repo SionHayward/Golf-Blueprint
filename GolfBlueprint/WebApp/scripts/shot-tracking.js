@@ -1,241 +1,235 @@
-let shots = [];
+// Shot tracking script
 let shotCount = 0;
+let puttCount = 0;
+let shots = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    const fullHoleView = document.getElementById('fullHoleView');
+    // Initialize from localStorage if available
+    loadHoleData();
     
-    if (fullHoleView) {
-        // Load any existing data for this hole
-        loadExistingData();
-        
-        // Set up click handler
-        fullHoleView.addEventListener('click', function(event) {
-            // Determine which zone was clicked
-            const clickedElement = document.elementFromPoint(event.clientX, event.clientY);
-            let zoneName = 'Out of play';
-            
-            if (clickedElement.classList.contains('zone')) {
-                zoneName = clickedElement.dataset.zoneName;
-            }
-
-            // Get coordinates relative to container
-            const rect = fullHoleView.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-
-            // Create shot marker
-            const shotMarker = document.createElement('div');
-            shotMarker.className = 'shot-marker';
-            shotMarker.innerHTML = `
-                <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="6" fill="white" stroke="black"/>
-                </svg>
-            `;
-
-            shotMarker.style.left = `${x}px`;
-            shotMarker.style.top = `${y}px`;
-            fullHoleView.appendChild(shotMarker);
-
-            // Add shot to array and update count
-            shots.push({
-                marker: shotMarker,
-                data: {
-                    zone: zoneName,
-                    x: x / rect.width * 100,
-                    y: y / rect.height * 100
-                }
-            });
-            shotCount++;
-            updateShotDisplay();
-            
-            console.log('Shot placed:', shots[shots.length - 1].data);
-        });
-
-        // Zone Hover
-        const labelDisplay = document.createElement('div');
-        labelDisplay.id = 'zoneNameDisplay';
-        labelDisplay.classList.add('zone-name-display');
-
-        fullHoleView.appendChild(labelDisplay);
-
-        const zones = document.querySelectorAll('.zone');
-        zones.forEach(zone => {
-            zone.addEventListener('mouseenter', () => {
-                const zoneName = zone.dataset.zoneName;
-                labelDisplay.textContent = zoneName;
-                labelDisplay.style.display = 'block';
-            });
-
-            zone.addEventListener('mouseleave', () => {
-                labelDisplay.style.display = 'none';
-            });
-        });
-    } else {
-        console.error('fullHoleView element not found');
+    // Add click event to the hole view container
+    const holeView = document.getElementById('fullHoleView');
+    if (holeView) {
+        holeView.addEventListener('click', recordShot);
     }
+    
+    // Update display
+    updateDisplay();
 });
 
-function loadExistingData() {
-    const currentHole = parseInt(document.querySelector('.hole-title').textContent.split(' ')[1]);
-    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
+function recordShot(event) {
+    // Get hole container
+    const container = document.getElementById('fullHoleView');
     
-    console.log('Current Hole:', currentHole);
-    console.log('Round Data:', roundData);
+    // Calculate position relative to the container
+    const rect = container.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
     
-    // Calculate total score from completed holes
-    let roundTotal = 0;
-    for (let i = 1; i < currentHole; i++) {
-        if (roundData[`hole${i}`]) {
-            console.log(`Adding score from hole ${i}:`, roundData[`hole${i}`].holeScore);
-            roundTotal += roundData[`hole${i}`].holeScore;
-        }
-    }
+    // Determine which zone was clicked
+    const zone = getZoneAtPosition(event.target);
     
-    console.log('Round Total calculated:', roundTotal);
-
-    // Create running total display
-    const scoreContainer = document.querySelector('.score-container');
-    const runningTotalDiv = document.createElement('div');
-    runningTotalDiv.className = 'running-total';
+    // Increment shot counter
+    shotCount++;
     
-    if (currentHole === 1) {
-        runningTotalDiv.innerHTML = `<p>Starting Round</p>`;
-    } else {
-        const previousHole = currentHole - 1;
-        runningTotalDiv.innerHTML = `
-            <p>Round Total: ${roundTotal} (through hole ${previousHole})</p>
-        `;
-    }
-    scoreContainer.appendChild(runningTotalDiv);
-
-    // Load current hole data if it exists
-    if (roundData[`hole${currentHole}`]) {
-        const holeData = roundData[`hole${currentHole}`];
-        console.log('Loading hole data:', holeData);
-        
-        // Restore shots
-        if (holeData.shots && holeData.shots.length > 0) {
-            holeData.shots.forEach(shotData => {
-                const fullHoleView = document.getElementById('fullHoleView');
-                
-                const shotMarker = document.createElement('div');
-                shotMarker.className = 'shot-marker';
-                shotMarker.innerHTML = `
-                    <svg viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="6" fill="white" stroke="black"/>
-                    </svg>
-                `;
-
-                shotMarker.style.left = `${shotData.x}%`;
-                shotMarker.style.top = `${shotData.y}%`;
-                fullHoleView.appendChild(shotMarker);
-
-                shots.push({
-                    marker: shotMarker,
-                    data: shotData
-                });
-            });
-            
-            shotCount = holeData.regularShots;
-            document.getElementById('puttCount').textContent = holeData.putts || 0;
-            updateShotDisplay();
-        }
-    }
+    // Create a new shot object
+    const shot = {
+        number: shotCount,
+        x: x,
+        y: y,
+        zone: zone,
+        xPercent: (x / rect.width) * 100,
+        yPercent: (y / rect.height) * 100
+    };
+    
+    // Add to shots array
+    shots.push(shot);
+    
+    // Add visual marker
+    addShotMarker(shot);
+    
+    // Update the display
+    updateDisplay();
+    
+    // Save data
+    saveHoleData();
 }
 
-function adjustPutts(change) {
-    const puttSpan = document.getElementById('puttCount');
-    let currentPutts = parseInt(puttSpan.textContent) || 0;
-    currentPutts = Math.max(0, currentPutts + change); // Prevent negative putts
-    puttSpan.textContent = currentPutts;
-    updateHoleScore();
+function addShotMarker(shot) {
+    const container = document.getElementById('fullHoleView');
+    
+    // Create marker element
+    const marker = document.createElement('div');
+    marker.className = 'shot-marker';
+    marker.textContent = shot.number; // Add shot number inside marker
+    
+    // Set position
+    marker.style.left = shot.x + 'px';
+    marker.style.top = shot.y + 'px';
+    
+    // Add data attributes for potential future use
+    marker.dataset.shotNumber = shot.number;
+    marker.dataset.zone = shot.zone;
+    
+    // Add to container
+    container.appendChild(marker);
+}
+
+function getZoneAtPosition(element) {
+    // If element is a zone, return its name
+    if (element && element.classList.contains('zone')) {
+        return element.dataset.zoneName || 'Unknown';
+    }
+    
+    return 'Unknown';
 }
 
 function removeLastShot() {
-    if (shots.length > 0) {
-        const lastShot = shots.pop();
-        lastShot.marker.remove();
+    if (shotCount > 0) {
+        // Remove the last shot from the array
+        shots.pop();
         shotCount--;
-        updateShotDisplay();
+        
+        // Remove the last visual marker
+        const markers = document.querySelectorAll('.shot-marker');
+        if (markers.length > 0) {
+            markers[markers.length - 1].remove();
+        }
+        
+        // Update display
+        updateDisplay();
+        
+        // Save updated data
+        saveHoleData();
     }
 }
 
-function updateShotDisplay() {
-    document.getElementById('shotCount').textContent = shotCount;
-    updateHoleScore();
+function adjustPutts(amount) {
+    // Adjust putt count, ensuring it doesn't go below 0
+    puttCount = Math.max(0, puttCount + amount);
+    
+    // Update display
+    updateDisplay();
+    
+    // Save updated data
+    saveHoleData();
 }
 
-function updateHoleScore() {
-    const putts = parseInt(document.getElementById('puttCount').textContent) || 0;
-    const holeScore = shotCount + putts;
-    document.getElementById('totalShots').textContent = holeScore;
+function updateDisplay() {
+    // Update shot counter
+    document.getElementById('shotCount').textContent = shotCount;
+    
+    // Update putt counter
+    document.getElementById('puttCount').textContent = puttCount;
+    
+    // Update total
+    document.getElementById('totalShots').textContent = shotCount + puttCount;
 }
 
 function submitScore() {
-    const putts = parseInt(document.getElementById('puttCount').textContent) || 0;
-    const holeScore = shotCount + putts;
+    // Calculate final score
+    const totalScore = shotCount + puttCount;
     
-    const currentHole = parseInt(document.querySelector('.hole-title').textContent.split(' ')[1]);
-    const nextHole = currentHole + 1;
+    // Get hole number from the URL or page content
+    const holeNumber = getHoleNumber();
     
-    const submitButton = document.querySelector('.submit-button');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Saving...';
+    // Construct hole data object with all information
+    const holeData = {
+        holeNumber: holeNumber,
+        holeScore: totalScore,
+        shotCount: shotCount,
+        puttCount: puttCount,
+        shots: shots
+    };
     
-    // Get existing round data
+    // Save to localStorage
+    saveScoreToLocalStorage(holeNumber, holeData);
+    
+    // Show confirmation
+    const confirmationMessage = document.getElementById('confirmationMessage');
+    confirmationMessage.textContent = `Score of ${totalScore} saved for Hole ${holeNumber}!`;
+    
+    // Determine next hole number
+    const nextHole = holeNumber < 18 ? holeNumber + 1 : 0;
+    
+    // Navigate to next hole or summary page
+    setTimeout(function() {
+        if (nextHole > 0) {
+            window.location.href = `hole${nextHole}.html`;
+        } else {
+            window.location.href = '../round-summary.html';
+        }
+    }, 1500);
+}
+
+function getHoleNumber() {
+    // Extract from URL pattern like "hole1.html"
+    const urlMatch = window.location.pathname.match(/hole(\d+)\.html/);
+    if (urlMatch && urlMatch[1]) {
+        return parseInt(urlMatch[1]);
+    }
+    
+    // If URL doesn't match, try to find it in the page title
+    const titleElement = document.querySelector('.hole-title');
+    if (titleElement) {
+        const titleMatch = titleElement.textContent.match(/Hole\s+(\d+)/i);
+        if (titleMatch && titleMatch[1]) {
+            return parseInt(titleMatch[1]);
+        }
+    }
+    
+    // Default to 1 if we can't determine it
+    return 1;
+}
+
+function saveScoreToLocalStorage(holeNumber, holeData) {
+    // Get current round data from localStorage
     let roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
     
-    // Save current hole data
-    roundData[`hole${currentHole}`] = {
-        regularShots: shotCount,
-        putts: putts,
-        holeScore: holeScore,
-        shots: shots.map(shot => shot.data)
-    };
-
-    // Calculate round total including current hole
-    let roundTotal = 0;
-    for (let i = 1; i <= currentHole; i++) {
-        if (roundData[`hole${i}`]) {
-            roundTotal += roundData[`hole${i}`].holeScore;
-        }
-    }
-
-    // Save to localStorage
+    // Add this hole's data
+    roundData[`hole${holeNumber}`] = holeData;
+    
+    // Save back to localStorage
     localStorage.setItem('currentRound', JSON.stringify(roundData));
-    
-    // Show confirmation message
-    document.getElementById('confirmationMessage').textContent = 
-        `Hole ${currentHole} Score: ${holeScore} (${shotCount} shots + ${putts} putts). Round Total: ${roundTotal}`;
-    
-    setTimeout(() => {
-        if (currentHole === 18) {
-            window.location.href = '../round-summary.html';
-        } else {
-            window.location.href = `hole${nextHole}.html`;
-        }
-    }, 2000);
 }
 
-function calculateRoundTotal() {
-    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
-    let total = 0;
+function loadHoleData() {
+    // Get hole number
+    const holeNumber = getHoleNumber();
     
-    for (let i = 1; i <= 18; i++) {
-        if (roundData[`hole${i}`]) {
-            total += roundData[`hole${i}`].holeScore;
-        }
+    // Get current round data from localStorage
+    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
+    
+    // Check if we have data for this hole
+    const holeKey = `hole${holeNumber}`;
+    if (roundData[holeKey]) {
+        const holeData = roundData[holeKey];
+        
+        // Restore counts
+        shotCount = holeData.shotCount || 0;
+        puttCount = holeData.puttCount || 0;
+        
+        // Restore shots array
+        shots = holeData.shots || [];
+        
+        // Restore visual markers
+        shots.forEach(addShotMarker);
     }
+}
+
+function saveHoleData() {
+    // Get hole number
+    const holeNumber = getHoleNumber();
     
-    return total;
-}
-
-function isHoleComplete(holeNumber) {
-    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
-    return !!roundData[`hole${holeNumber}`];
-}
-
-function getHoleScore(holeNumber) {
-    const roundData = JSON.parse(localStorage.getItem('currentRound') || '{}');
-    return roundData[`hole${holeNumber}`]?.holeScore || 0;
+    // Create hole data
+    const holeData = {
+        holeNumber: holeNumber,
+        shotCount: shotCount,
+        puttCount: puttCount,
+        holeScore: shotCount + puttCount,
+        shots: shots
+    };
+    
+    // Save to localStorage
+    saveScoreToLocalStorage(holeNumber, holeData);
 }

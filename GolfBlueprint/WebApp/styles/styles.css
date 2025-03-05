@@ -816,3 +816,105 @@ body {
         flex-direction: column;
     }
 }
+
+/* Add these styles to your styles.css file */
+
+/* Shot analysis page - compact view with scrolling */
+.dashboard-charts .hole-svg-container {
+    flex: 0 0 400px;
+    height: 600px;
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    background-color: #e8f4e8;
+    overflow: auto; /* Allow scrolling for taller images */
+}
+
+/* Hole submission pages - full height view */
+.hole-section .hole-svg-container {
+    width: 400px;
+    height: 1000px;
+    position: relative;
+    cursor: crosshair;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    background-color: #e8f4e8;
+    overflow: visible; /* Don't clip or scroll */
+}
+
+/* General hole SVG container properties */
+.hole-svg-container {
+    position: relative;
+}
+
+/* Make sure hole images are full size on hole pages */
+.hole-section .hole-svg-container img {
+    width: 400px;
+    height: 1000px;
+    display: block;
+}
+
+/* For better mobile view */
+@media (max-width: 768px) {
+    .hole-section .hole-svg-container {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+}
+
+/* Add these styles to your styles.css file */
+
+/* Shot markers */
+.shot-marker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border: 2px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100; /* Ensure it's above the image */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: #333;
+    pointer-events: none; /* So it doesn't interfere with clicking on the hole */
+}
+
+/* Make sure hole-svg-container allows for proper absolute positioning */
+.hole-section .hole-svg-container {
+    position: relative;
+    overflow: visible !important; /* Ensure markers outside container are visible */
+}
+
+/* Make sure the SVG image doesn't block clicks */
+.hole-section .hole-svg-container img {
+    pointer-events: none;
+    position: relative;
+    z-index: 10;
+}
+
+/* Make sure zones are above the image but below markers */
+.hole-section .hole-svg-container .zone {
+    z-index: 20;
+}
+
+/* Footer styling fix */
+.footer {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    padding: 1.5rem 0;
+    text-align: center;
+    margin-top: 3rem;
+    width: 100%;
+}
+
+.footer-text {
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
