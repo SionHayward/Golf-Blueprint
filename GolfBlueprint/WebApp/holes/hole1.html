@@ -42,7 +42,7 @@
                         <div class="shot-counter">
                             <p>Click on the interactive map exactly where your full shots and chip shots finished</p>
                             <br>
-                            <p>Add your putts separately using the buttons below</p>
+                            <p>Add your putts and penalty strokes separately using the buttons below</p>
                             <br>
                             <h2>Shot information</h2>
                             <p>Shot counter: <span id="shotCount">0</span></p>
@@ -54,7 +54,15 @@
                                 <button onclick="adjustPutts(-1)" class="control-button">-</button>
                                 <button onclick="adjustPutts(1)" class="control-button">+</button>
                             </div>
-                            <p class="confirmation-message" id="confirmationMessage"></p>
+                        </div>
+                        
+                        <!-- New Penalty Stroke Section -->
+                        <div class="penalty-input">
+                            <label>Penalty Strokes: <span id="penaltyCount">0</span></label>
+                            <div>
+                                <button onclick="addPenaltyStroke()" class="penalty-button">Add Penalty Stroke</button>
+                                <p id="penaltyConfirmation"></p>
+                            </div>
                         </div>
                         <div class="total-shots">
                             <p>Total Score: <span id="totalShots">0</span></p>

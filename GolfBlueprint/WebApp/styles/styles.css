@@ -918,3 +918,32 @@ body {
     margin: 0;
     letter-spacing: 0.5px;
 }
+
+/* Penalty Stroke Styles */
+.penalty-input {
+    margin-bottom: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #eee;
+}
+
+.penalty-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 0.5rem;
+}
+
+.penalty-button:hover {
+    background-color: #c0392b;
+}
+
+#penaltyConfirmation {
+    color: #e74c3c;
+    font-style: italic;
+    margin-top: 0.5rem;
+    display: none;
+}

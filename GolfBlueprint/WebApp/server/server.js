@@ -415,3 +415,41 @@ app.listen(PORT, async () => {
     console.error('Error connecting to database:', err);
   }
 });
+
+// Round count endpoint
+app.get('/api/round-count', async (req, res) => {
+  const { hole } = req.query;
+  
+  if (!hole) {
+    return res.status(400).json({ error: 'Hole number is required' });
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Query to count distinct rounds for a specific hole
+    const query = `
+      SELECT COUNT(DISTINCT r.round_id) as count
+      FROM Rounds r
+      JOIN RoundHoles rh ON r.round_id = rh.round_id
+      JOIN Holes h ON rh.hole_id = h.hole_id
+      WHERE h.hole_number = ?
+    `;
+    
+    const [results] = await connection.execute(query, [parseInt(hole)]);
+    
+    // Return the count
+    res.json({
+      count: results[0].count
+    });
+    
+  } catch (error) {
+    console.error('Error fetching round count:', error);
+    res.status(500).json({ error: 'Failed to fetch round count' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});

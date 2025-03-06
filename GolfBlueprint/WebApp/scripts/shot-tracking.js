@@ -1,7 +1,9 @@
 // Shot tracking script
 let shotCount = 0;
 let puttCount = 0;
+let penaltyCount = 0; // Add variable for penalty strokes
 let shots = [];
+let actionHistory = []; // Track all actions chronologically
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize from localStorage if available
@@ -39,11 +41,18 @@ function recordShot(event) {
         y: y,
         zone: zone,
         xPercent: (x / rect.width) * 100,
-        yPercent: (y / rect.height) * 100
+        yPercent: (y / rect.height) * 100,
+        type: 'shot' // Identify this as a regular shot
     };
     
     // Add to shots array
     shots.push(shot);
+    
+    // Add to action history
+    actionHistory.push({
+        type: 'shot',
+        shotIndex: shots.length - 1
+    });
     
     // Add visual marker
     addShotMarker(shot);
@@ -85,15 +94,39 @@ function getZoneAtPosition(element) {
 }
 
 function removeLastShot() {
-    if (shotCount > 0) {
-        // Remove the last shot from the array
-        shots.pop();
-        shotCount--;
+    // Check if we have any actions to undo
+    if (actionHistory.length > 0) {
+        // Get the last action
+        const lastAction = actionHistory.pop();
         
-        // Remove the last visual marker
-        const markers = document.querySelectorAll('.shot-marker');
-        if (markers.length > 0) {
-            markers[markers.length - 1].remove();
+        if (lastAction.type === 'shot') {
+            // Remove the last shot from the array
+            shots.splice(lastAction.shotIndex, 1);
+            shotCount--;
+            
+            // Remove the last visual marker
+            const markers = document.querySelectorAll('.shot-marker');
+            if (markers.length > 0) {
+                markers[markers.length - 1].remove();
+            }
+        } else if (lastAction.type === 'penalty') {
+            // Decrement penalty count
+            penaltyCount--;
+            
+            // Show a brief confirmation
+            const confirmationMessage = document.getElementById('penaltyConfirmation');
+            if (confirmationMessage) {
+                confirmationMessage.textContent = "Penalty stroke removed";
+                confirmationMessage.style.display = "block";
+                
+                // Hide after 2 seconds
+                setTimeout(() => {
+                    confirmationMessage.style.display = "none";
+                }, 2000);
+            }
+        } else if (lastAction.type === 'putt') {
+            // Decrement putt count
+            puttCount--;
         }
         
         // Update display
@@ -104,15 +137,52 @@ function removeLastShot() {
     }
 }
 
-function adjustPutts(amount) {
-    // Adjust putt count, ensuring it doesn't go below 0
-    puttCount = Math.max(0, puttCount + amount);
+// New function to add a penalty stroke
+function addPenaltyStroke() {
+    // Increment penalty count
+    penaltyCount++;
+    
+    // Add to action history
+    actionHistory.push({
+        type: 'penalty'
+    });
     
     // Update display
     updateDisplay();
     
     // Save updated data
     saveHoleData();
+    
+    // Show a brief confirmation
+    const confirmationMessage = document.getElementById('penaltyConfirmation');
+    if (confirmationMessage) {
+        confirmationMessage.textContent = "Penalty stroke added";
+        confirmationMessage.style.display = "block";
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+            confirmationMessage.style.display = "none";
+        }, 2000);
+    }
+}
+
+function adjustPutts(amount) {
+    // Adjust putt count, ensuring it doesn't go below 0
+    if (puttCount + amount >= 0) {
+        puttCount += amount;
+        
+        // Add to action history
+        actionHistory.push({
+            type: 'putt',
+            amount: amount
+        });
+        
+        // Update display
+        updateDisplay();
+        
+        // Save updated data
+        saveHoleData();
+    }
 }
 
 function updateDisplay() {
@@ -122,13 +192,18 @@ function updateDisplay() {
     // Update putt counter
     document.getElementById('puttCount').textContent = puttCount;
     
-    // Update total
-    document.getElementById('totalShots').textContent = shotCount + puttCount;
+    // Update penalty counter if element exists
+    if (document.getElementById('penaltyCount')) {
+        document.getElementById('penaltyCount').textContent = penaltyCount;
+    }
+    
+    // Update total - now includes penalty strokes
+    document.getElementById('totalShots').textContent = shotCount + puttCount + penaltyCount;
 }
 
 function submitScore() {
-    // Calculate final score
-    const totalScore = shotCount + puttCount;
+    // Calculate final score - now includes penalty strokes
+    const totalScore = shotCount + puttCount + penaltyCount;
     
     // Get hole number from the URL or page content
     const holeNumber = getHoleNumber();
@@ -139,7 +214,9 @@ function submitScore() {
         holeScore: totalScore,
         shotCount: shotCount,
         puttCount: puttCount,
-        shots: shots
+        penaltyCount: penaltyCount, // Add penalty count to the data
+        shots: shots,
+        actionHistory: actionHistory // Save action history
     };
     
     // Save to localStorage
@@ -147,7 +224,28 @@ function submitScore() {
     
     // Show confirmation
     const confirmationMessage = document.getElementById('confirmationMessage');
-    confirmationMessage.textContent = `Score of ${totalScore} saved for Hole ${holeNumber}!`;
+    if (confirmationMessage) {
+        confirmationMessage.textContent = `Score of ${totalScore} saved for Hole ${holeNumber}!`;
+    } else {
+        // If no confirmation element exists, create a temporary one
+        const tempConfirmation = document.createElement('div');
+        tempConfirmation.textContent = `Score of ${totalScore} saved for Hole ${holeNumber}!`;
+        tempConfirmation.style.position = 'fixed';
+        tempConfirmation.style.top = '50%';
+        tempConfirmation.style.left = '50%';
+        tempConfirmation.style.transform = 'translate(-50%, -50%)';
+        tempConfirmation.style.padding = '20px';
+        tempConfirmation.style.backgroundColor = '#4CAF50';
+        tempConfirmation.style.color = 'white';
+        tempConfirmation.style.borderRadius = '5px';
+        tempConfirmation.style.zIndex = '1000';
+        document.body.appendChild(tempConfirmation);
+        
+        // Remove after timeout
+        setTimeout(() => {
+            document.body.removeChild(tempConfirmation);
+        }, 1400);
+    }
     
     // Determine next hole number
     const nextHole = holeNumber < 18 ? holeNumber + 1 : 0;
@@ -208,9 +306,13 @@ function loadHoleData() {
         // Restore counts
         shotCount = holeData.shotCount || 0;
         puttCount = holeData.puttCount || 0;
+        penaltyCount = holeData.penaltyCount || 0; // Restore penalty count
         
         // Restore shots array
         shots = holeData.shots || [];
+        
+        // Restore action history
+        actionHistory = holeData.actionHistory || [];
         
         // Restore visual markers
         shots.forEach(addShotMarker);
@@ -226,8 +328,10 @@ function saveHoleData() {
         holeNumber: holeNumber,
         shotCount: shotCount,
         puttCount: puttCount,
-        holeScore: shotCount + puttCount,
-        shots: shots
+        penaltyCount: penaltyCount, // Save penalty count
+        holeScore: shotCount + puttCount + penaltyCount, // Include penalties in score
+        shots: shots,
+        actionHistory: actionHistory // Save action history
     };
     
     // Save to localStorage

@@ -5,7 +5,171 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golf Shot Analysis Dashboard</title>
     <link rel="stylesheet" href="styles/styles.css">
-    <link rel="stylesheet" href="styles/zone-performance.css">
+    <!-- <link rel="stylesheet" href="styles/zone-performance.css"> -->
+    <style>
+        /* Layout adjustments for dashboard */
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: 400px 1fr; /* First column fixed at 400px for SVG image */
+            gap: 2rem;
+        }
+        
+        /* SVG container card styling */
+        .svg-container-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 0.5rem;
+            height: fit-content;
+            overflow: hidden; /* Prevent SVG from extending outside */
+            width: 420px;
+        }
+        
+        /* Update SVG container to show full image without scrolling */
+        .dashboard-charts .hole-svg-container {
+            width: 400px;
+            height: 1000px; /* Full height of the SVG */
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            background-color: #e8f4e8;
+            overflow: hidden; /* Changed to hidden to prevent content from extending out */
+            margin: 0 auto; /* Center the container */
+            display: flex; /* Add flexbox to center the image */
+            justify-content: center; /* Center horizontally */
+            align-items: flex-start; /* Align to the top */
+        }
+        
+        /* Ensure image displays at full size and centered */
+        #hole-image {
+            width: 400px;
+            height: 1000px;
+            object-fit: cover;
+            display: block; /* Ensure proper block display */
+        }
+        
+        /* Combined stats container */
+        .combined-stats {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-height: 1100px; /* Match SVG height */
+            overflow-y: auto; /* Add scrolling for overflow content */
+        }
+        
+        .combined-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .score-stats-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .score-stats-card {
+            flex: 1;
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .score-stats-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+        
+        /* Zone stats table container with scrolling */
+        .zone-stats {
+            max-height: 800px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 0 !important;
+        }
+        
+        /* Enhanced Hole Selector */
+        .hole-selector-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        #hole-select {
+            width: 400px;
+            height: 50px;
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--primary-color);
+            background-color: #f8f8f8;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="6"><path d="M0,0 L12,0 L6,6 Z" fill="%23333"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 12px;
+        }
+        
+        #hole-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+        }
+        
+        /* Hole info header */
+        .hole-info {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hole-info h2 {
+            margin: 0;
+        }
+        
+        .hole-details {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .rounds-count {
+            font-size: 0.95rem;
+            color: #666;
+            font-style: italic;
+            margin-left: auto;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .dashboard-charts {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-charts .hole-svg-container {
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto 2rem;
+            }
+            
+            #hole-select {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -28,77 +192,57 @@
             <p>Analyze your shots to identify patterns and improve your game strategy</p>
         </div>
 
-        <div class="dashboard-filters">
-            <div class="filter-group">
-                <label for="hole-select">Hole:</label>
-                <select id="hole-select">
-                    <option value="1">Hole 1 - Par 4</option>
-                    <option value="2">Hole 2 - Par 3</option>
-                    <option value="3">Hole 3 - Par 5</option>
-                    <option value="4">Hole 4 - Par 4</option>
-                    <option value="5">Hole 5 - Par 5</option>
-                    <option value="6">Hole 6 - Par 3</option>
-                    <option value="7">Hole 7 - Par 4</option>
-                    <option value="8">Hole 8 - Par 5</option>
-                    <option value="9">Hole 9 - Par 3</option>
-                    <option value="10">Hole 10 - Par 4</option>
-                    <option value="11">Hole 11 - Par 3</option>
-                    <option value="12">Hole 12 - Par 4</option>
-                    <option value="13">Hole 13 - Par 5</option>
-                    <option value="14">Hole 14 - Par 4</option>
-                    <option value="15">Hole 15 - Par 4</option>
-                    <option value="16">Hole 16 - Par 4</option>
-                    <option value="17">Hole 17 - Par 3</option>
-                    <option value="18">Hole 18 - Par 4</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="shot-number">Shot Number:</label>
-                <select id="shot-number">
-                    <option value="all">All Shots</option>
-                    <option value="1">Tee Shot</option>
-                    <option value="2">Approach Shot</option>
-                    <option value="3">Chip/Pitch</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="date-range">Time Period:</label>
-                <select id="date-range">
-                    <option value="all-time">All Time</option>
-                    <option value="this-year">This Year</option>
-                    <option value="last-5">Last 5 Rounds</option>
-                    <option value="last-10">Last 10 Rounds</option>
-                </select>
-            </div>
+        <!-- Enhanced Hole Selector -->
+        <div class="hole-selector-container">
+            <select id="hole-select">
+                <option value="1">Hole 1 - Par 4</option>
+                <option value="2">Hole 2 - Par 3</option>
+                <option value="3">Hole 3 - Par 5</option>
+                <option value="4">Hole 4 - Par 4</option>
+                <option value="5">Hole 5 - Par 5</option>
+                <option value="6">Hole 6 - Par 3</option>
+                <option value="7">Hole 7 - Par 4</option>
+                <option value="8">Hole 8 - Par 5</option>
+                <option value="9">Hole 9 - Par 3</option>
+                <option value="10">Hole 10 - Par 4</option>
+                <option value="11">Hole 11 - Par 3</option>
+                <option value="12">Hole 12 - Par 4</option>
+                <option value="13">Hole 13 - Par 5</option>
+                <option value="14">Hole 14 - Par 4</option>
+                <option value="15">Hole 15 - Par 4</option>
+                <option value="16">Hole 16 - Par 4</option>
+                <option value="17">Hole 17 - Par 3</option>
+                <option value="18">Hole 18 - Par 4</option>
+            </select>
         </div>
 
         <div class="dashboard-charts">
-            <div class="chart-card">
-                <h2>Average Score by Zone</h2>
+            <!-- SVG image (left side) -->
+            <div class="svg-container-card">
+                <h2>Hole Visualisation</h2>
+                <div class="hole-svg-container" id="hole-visualization">
+                    <img id="hole-image" src="" alt="Hole Image">
+                    <!-- Zone highlights will be dynamically added here -->
+                </div>
+            </div>
+            
+            <!-- Combined Analysis (right side) -->
+            <div class="combined-stats">
+                <div class="hole-info">
+                    <h2>Hole Analysis</h2>
+                    <span class="hole-details" id="hole-details">Hole 1 - Par 4 - 420 yards</span>
+                    <span class="rounds-count" id="rounds-count">using data from 15 rounds</span>
+                </div>
+                
+                <!-- Score Chart Section -->
                 <div id="score-chart" class="chart-container">
                     <div class="loading-placeholder">
                         <p>Select a hole to view score data...</p>
                     </div>
                 </div>
-            </div>
-            
-            <div class="chart-card">
-                <h2>Shot Distribution</h2>
-                <div id="distribution-chart" class="chart-container">
-                    <div class="loading-placeholder">
-                        <p>Select a hole to view distribution data...</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="chart-card hole-visualization">
-                <div class="hole-svg-container" id="hole-visualization">
-                    <img id="hole-image" src="" alt="Hole Image">
-                    <!-- Zone highlights will be dynamically added here -->
-                </div>
                 
+                <!-- Zone Stats Table with Scrolling -->
                 <div class="zone-stats">
-                    <h2>Zone Performance</h2>
                     <table id="zone-stats-table">
                         <thead>
                             <tr>
@@ -144,13 +288,34 @@
     <!-- Load auth.js first -->
     <script src="scripts/auth.js"></script>
     
+    
     <!-- Then load dashboard-specific script -->
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Set up event listeners for filter changes
     document.getElementById('hole-select').addEventListener('change', updateDashboard);
-    document.getElementById('shot-number').addEventListener('change', updateDashboard);
-    document.getElementById('date-range').addEventListener('change', updateDashboard);
+    
+    // Hole data with yardage information
+    const holeData = {
+        1: { par: 4, yards: 420 },
+        2: { par: 3, yards: 185 },
+        3: { par: 5, yards: 565 },
+        4: { par: 4, yards: 390 },
+        5: { par: 5, yards: 530 },
+        6: { par: 3, yards: 170 },
+        7: { par: 4, yards: 430 },
+        8: { par: 5, yards: 550 },
+        9: { par: 3, yards: 190 },
+        10: { par: 4, yards: 410 },
+        11: { par: 3, yards: 200 },
+        12: { par: 4, yards: 400 },
+        13: { par: 5, yards: 560 },
+        14: { par: 4, yards: 425 },
+        15: { par: 4, yards: 415 },
+        16: { par: 4, yards: 380 },
+        17: { par: 3, yards: 175 },
+        18: { par: 4, yards: 445 }
+    };
     
     // Function to load hole-specific CSS
     function loadHoleCSS(holeNumber) {
@@ -170,18 +335,21 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Loaded CSS: styles/zones/hole${holeNumber}zones.css`);
     }
     
-    // Function to update the dashboard based on selected filters
+    // Function to update the dashboard based on selected hole
     function updateDashboard() {
         const holeNumber = document.getElementById('hole-select').value;
-        const shotNumber = document.getElementById('shot-number').value;
-        const dateRange = document.getElementById('date-range').value;
         
-        console.log(`Updating dashboard for hole ${holeNumber}, shot ${shotNumber}, period ${dateRange}`);
+        console.log(`Updating dashboard for hole ${holeNumber}`);
         
         // Update hole image
         const holeImage = document.getElementById('hole-image');
         holeImage.src = `images/${holeNumber}.svg`;
         holeImage.alt = `Hole ${holeNumber}`;
+        
+        // Update hole details information
+        const holeDetails = document.getElementById('hole-details');
+        const hole = holeData[holeNumber];
+        holeDetails.textContent = `Hole ${holeNumber} - Par ${hole.par} - ${hole.yards} yards`;
         
         // Load hole-specific CSS
         loadHoleCSS(holeNumber);
@@ -194,36 +362,68 @@ document.addEventListener('DOMContentLoaded', function() {
         addZoneElements(container, holeNumber);
         
         // Fetch data from API
-        fetchHoleData(holeNumber, shotNumber, dateRange);
+        fetchHoleData(holeNumber);
     }
     
-    // Function to add zone elements to the container
-    function addZoneElements(container, holeNumber) {
-        // Clear existing zones first
-        const existingZones = container.querySelectorAll('.zone');
-        existingZones.forEach(zone => zone.remove());
-        
-        // For hole 1, add all the zones from your CSS
-        if (holeNumber === '1') {
-            const zoneIds = [
-                'teebox', 'short-fairway', 'mid-fairway', 'long-fairway',
-                'short-right-rough', 'short-left-rough', 'mid-right-rough', 'mid-left-rough',
-                'long-right-rough', 'long-left-rough', 'green', 'short-left', 'short-right',
-                'long-left', 'long-right', 'lake', 'left-green-side', 'mid-left-trees',
-                'short-left-trees', 'right-green-side', 'outer-rough'
-            ];
-            
-            zoneIds.forEach(id => {
-                const zone = document.createElement('div');
-                zone.id = id;
-                zone.className = 'zone';
-                zone.dataset.zoneName = idToZoneName(id);
-                container.appendChild(zone);
-            });
-        }
-        // Add other holes similar to the above
-        // ...
-    }
+// Function to add all possible zone elements to the container
+function addZoneElements(container, holeNumber) {
+    // Clear existing zones first
+    const existingZones = container.querySelectorAll('.zone');
+    existingZones.forEach(zone => zone.remove());
+    
+// Define ALL possible zones across the entire course with duplicates removed
+const allPossibleZones = [
+    // Tee areas
+    'teebox', 'tee',
+    
+    // Fairway sections
+    'short-fairway', 'mid-fairway', 'long-fairway', 'shortfairway', 'midfairway', 'longfairway',
+    
+    // Rough areas
+    'short-left-rough', 'mid-left-rough', 'long-left-rough',
+    'short-right-rough', 'mid-right-rough', 'long-right-rough', 'rough', 'short-rough',
+    'leftrough', 'shortrightrough', 'shortleftrough', 'midrightrough', 'midleftrough', 
+    'longrightrough', 'longleftrough', 'longlongleftrough', 'longlongrightrough',
+    
+    // Green and surrounding areas
+    'green',
+    'short-left', 'short-right', 'long-left', 'long-right',
+    'shortright', 'shortleft', 'longleft', 'longright', 'long',
+    'backleft', 'backright',
+
+    // Hazards
+    'lake', 'left-lake', 'right-lake', 'left-bunker', 'right-bunker', 'fairway-bunker', 
+    'bunker', 'green-bunkers', 'waterhazard', 'frontlake', 'rightlake', 'fairwaybunker',
+    'potbunkers', 'shortlake', 'longlake',
+    
+    // Trees and wooded areas
+    'left-trees', 'right-trees', 'left-green-side', 'right-green-side',
+    'mid-left-trees', 'mid-right-trees', 'short-left-trees', 'short-right-trees',
+    'long-left-trees', 'long-right-trees', 'long-mid-right-trees',
+    'long-long-left-trees', 'long-long-right-trees', 'long-trees', 'right-trees',
+    'rightrees', 'longtrees', 'leftrees', 'rightbush', 'shortleftrees', 'midleftrees',
+    'longleftrees', 'shortrightrees', 'midrighttrees', 'longmidrightrees', 'shortrighttrees',
+    'shortlefttrees', 'midlefttrees', 'longlefttrees', 'longrighttrees', 'longtrees',
+    'longrightbushes', 'midrightbushes',
+    
+    // Boundaries
+    'outer-rough', 'long-right-outer-rough', 'short-right-outer-rough', 
+    'mid-right-outer-rough', 'mid-left-outer-rough', 'short-left-outer-rough',
+    'out-of-bounds', 'longrightouter', 'shortrightouter', 'leftouterrough',
+    'longrightouterrough', 'midrightouterrough', 'midroughtouter', 'shortroughouterrough'
+];
+    
+    // Create all zone elements (they'll only be positioned if defined in the CSS)
+    allPossibleZones.forEach(id => {
+        const zone = document.createElement('div');
+        zone.id = id;
+        zone.className = 'zone';
+        zone.dataset.zoneName = idToZoneName(id);
+        container.appendChild(zone);
+    });
+    
+    console.log(`Added ${allPossibleZones.length} potential zone elements for hole ${holeNumber}`);
+}
     
     // Convert ID to zone name
     function idToZoneName(id) {
@@ -231,78 +431,129 @@ document.addEventListener('DOMContentLoaded', function() {
         return id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     }
     
-    // Convert zone name to ID
-    function zoneNameToId(name) {
-        // Convert zone names from database to CSS IDs
-        return name.toLowerCase().replace(/ /g, '-');
-    }
+// Enhanced zone name to ID conversion with fallback support
+function zoneNameToId(name, holeNumber) {
+    const zoneName = name.toLowerCase();
     
-    // Enhanced zone visualization for shot analysis
-    function updateZonePerformanceVisualization(zoneData, holeNumber) {
-        const container = document.getElementById('hole-visualization');
+    // For hole 1-9, prefer hyphenated IDs
+    if (parseInt(holeNumber) < 9) {
+        return zoneName.replace(/ /g, '-');
+    } 
+    // For hole 10+, prefer non-hyphenated IDs
+    else {
+        return zoneName.replace(/ /g, '');
+    }
+}
+
+// Enhanced zone performance visualization with position checking
+function updateZonePerformanceVisualization(zoneData, holeNumber) {
+    const container = document.getElementById('hole-visualization');
+    
+    // Reset any existing zone styling
+    const zones = container.querySelectorAll('.zone');
+    zones.forEach(zone => {
+        zone.style.backgroundColor = '';
+        zone.classList.remove('good-zone', 'bad-zone', 'neutral-zone');
+        zone.style.opacity = '0';
+        zone.style.display = 'none';
+    });
+    
+    // If no data, return
+    if (!zoneData || zoneData.length === 0) return;
+    
+    // Find the range of scores to normalize the coloring
+    let minScore = Infinity;
+    let maxScore = -Infinity;
+    
+    zoneData.forEach(zone => {
+        if (zone.avgScore < minScore) minScore = zone.avgScore;
+        if (zone.avgScore > maxScore) maxScore = zone.avgScore;
+    });
+    
+    // Calculate median score as reference point
+    const scores = zoneData.map(zone => zone.avgScore);
+    scores.sort((a, b) => a - b);
+    const medianScore = scores.length % 2 === 0 
+        ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
+        : scores[Math.floor(scores.length/2)];
+    
+    // Apply coloring to each zone
+    zoneData.forEach(zone => {
+        let zoneElement = null;
+        const zoneName = zone.zone.toLowerCase();
         
-        // Reset any existing zone styling
-        const zones = container.querySelectorAll('.zone');
-        zones.forEach(zone => {
-            zone.style.backgroundColor = '';
-            zone.classList.remove('good-zone', 'bad-zone', 'neutral-zone');
-            zone.style.opacity = '0';
-        });
+        // For hole 1-9, try hyphenated ID first
+        if (parseInt(holeNumber) < 10) {
+            const hyphenatedId = zoneName.replace(/ /g, '-');
+            zoneElement = document.getElementById(hyphenatedId);
+            console.log(`Trying hyphenated ID for hole ${holeNumber}: ${hyphenatedId}`);
+        } 
+        // For hole 10+, try non-hyphenated ID first
+        else {
+            const nonHyphenatedId = zoneName.replace(/ /g, '');
+            zoneElement = document.getElementById(nonHyphenatedId);
+            console.log(`Trying non-hyphenated ID for hole ${holeNumber}: ${nonHyphenatedId}`);
+        }
         
-        // If no data, return
-        if (!zoneData || zoneData.length === 0) return;
+        // If not found, try the alternate format as backup
+        if (!zoneElement) {
+            if (parseInt(holeNumber) < 10) {
+                // Try non-hyphenated as backup for holes 1-9
+                const nonHyphenatedId = zoneName.replace(/ /g, '');
+                zoneElement = document.getElementById(nonHyphenatedId);
+                console.log(`Backup: trying non-hyphenated ID: ${nonHyphenatedId}`);
+            } else {
+                // Try hyphenated as backup for holes 10+
+                const hyphenatedId = zoneName.replace(/ /g, '-');
+                zoneElement = document.getElementById(hyphenatedId);
+                console.log(`Backup: trying hyphenated ID: ${hyphenatedId}`);
+            }
+        }
         
-        // Find the range of scores to normalize the coloring
-        let minScore = Infinity;
-        let maxScore = -Infinity;
-        
-        zoneData.forEach(zone => {
-            if (zone.avgScore < minScore) minScore = zone.avgScore;
-            if (zone.avgScore > maxScore) maxScore = zone.avgScore;
-        });
-        
-        // Calculate median score as reference point
-        const scores = zoneData.map(zone => zone.avgScore);
-        scores.sort((a, b) => a - b);
-        const medianScore = scores.length % 2 === 0 
-            ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
-            : scores[Math.floor(scores.length/2)];
-        
-        // Apply coloring to each zone
-        zoneData.forEach(zone => {
-            // Convert zone name to id format
-            const zoneId = zoneNameToId(zone.zone);
-            const zoneElement = document.getElementById(zoneId);
+        if (zoneElement) {
+            // More lenient check for positioning - some CSS might be setting display:block
+            // instead of position:absolute, or using other methods for positioning
+            const computedStyle = window.getComputedStyle(zoneElement);
             
-            if (zoneElement) {
-                // Determine zone status (good, neutral, bad)
+            // Check if element has any positioning defined (absolute, clip-path, or defined width/height)
+            const hasAnyPositioning = 
+                computedStyle.position !== 'static' || 
+                computedStyle.clipPath !== 'none' || 
+                (computedStyle.width !== 'auto' && computedStyle.height !== 'auto');
+            
+            // Proceed with styling even if minimal positioning is detected
+            if (hasAnyPositioning || parseInt(holeNumber) >= 10) {
+                // Calculate zone status and color
                 let zoneStatus;
                 let opacity;
                 
                 // Calculate performance relative to median
                 const scoreDiff = zone.avgScore - medianScore;
-                const normalizedDiff = scoreDiff / (maxScore - minScore) * 2; // Scale to -1 to 1 range
+                const normalizedDiff = (maxScore > minScore) ? 
+                    scoreDiff / (maxScore - minScore) * 2 : 0; // Avoid division by zero
                 
                 if (zone.avgScore < medianScore - (maxScore - minScore) * 0.15) {
                     zoneStatus = 'good-zone';
-                    // Darker green for better zones
-                    opacity = 0.4 + Math.min(0.5, Math.abs(normalizedDiff) * 0.5);
-                    zoneElement.style.backgroundColor = `rgba(76, 175, 80, ${opacity})`;
+                    // Blue for better zones
+                    opacity = 0.5 + Math.min(0.4, Math.abs(normalizedDiff) * 0.5);
+                    zoneElement.style.backgroundColor = `rgba(59, 243, 46, ${opacity})`;
                 } else if (zone.avgScore > medianScore + (maxScore - minScore) * 0.15) {
                     zoneStatus = 'bad-zone';
                     // Darker red for worse zones
-                    opacity = 0.4 + Math.min(0.5, Math.abs(normalizedDiff) * 0.5);
-                    zoneElement.style.backgroundColor = `rgba(244, 67, 54, ${opacity})`;
+                    opacity = 0.6 + Math.min(0.3, Math.abs(normalizedDiff) * 0.4);
+                    zoneElement.style.backgroundColor = `rgba(255, 102, 102, ${opacity})`;
                 } else {
                     zoneStatus = 'neutral-zone';
-                    opacity = 0.3;
-                    zoneElement.style.backgroundColor = `rgba(255, 193, 7, ${opacity})`;
+                    // Darker orange for neutral zones
+                    opacity = 0.5;
+                    zoneElement.style.backgroundColor = `rgba(255, 152, 0, ${opacity})`;
                 }
                 
                 // Add status class
                 zoneElement.classList.add(zoneStatus);
                 
-                // Make zone visible (as it starts with opacity 0)
+                // Make zone visible again
+                zoneElement.style.display = '';
                 zoneElement.style.opacity = '1';
                 
                 // Add tooltip
@@ -312,82 +563,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 zoneElement.addEventListener('click', () => {
                     highlightTableRow(zone.zone);
                 });
-            }
-        });
-        
-        // Add legend
-        addPerformanceLegend(container);
-    }
-
-    // Add a legend explaining the colors
-    function addPerformanceLegend(container) {
-        // Remove existing legend if present
-        const existingLegend = document.getElementById('zone-legend');
-        if (existingLegend) existingLegend.remove();
-        
-        const legend = document.createElement('div');
-        legend.id = 'zone-legend';
-        legend.className = 'zone-legend';
-        legend.innerHTML = `
-            <div class="legend-title">Zone Performance</div>
-            <div class="legend-item">
-                <span class="legend-color" style="background-color: rgba(76, 175, 80, 0.6);"></span>
-                <span class="legend-label">Best Scoring Areas</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color" style="background-color: rgba(255, 193, 7, 0.4);"></span>
-                <span class="legend-label">Average Scoring Areas</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color" style="background-color: rgba(244, 67, 54, 0.6);"></span>
-                <span class="legend-label">Challenging Areas</span>
-            </div>
-        `;
-        
-        container.appendChild(legend);
-    }
-    
-    // Function to fetch hole data from API
-    function fetchHoleData(holeNumber, shotNumber, dateRange) {
-        // Show loading state
-        document.getElementById('score-chart').innerHTML = '<div class="loading-placeholder"><p>Loading data...</p></div>';
-        document.getElementById('distribution-chart').innerHTML = '<div class="loading-placeholder"><p>Loading data...</p></div>';
-        
-        // Fetch data from API
-        fetch(`/api/hole-stats?hole=${holeNumber}&shot=${shotNumber}&datePeriod=${dateRange}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('API response:', data);
                 
-                if (data && data.zones && data.zones.length > 0) {
-                    // Update visualizations
-                    updateZonePerformanceVisualization(data.zones, holeNumber);
-                    updateZoneStatsTable(data.zones);
-                    updateScoreChart(data.zones, data.par);
-                    updateDistributionChart(data.zones);
-                } else {
-                    // Handle no data case
-                    document.getElementById('score-chart').innerHTML = 
-                        '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
-                    document.getElementById('distribution-chart').innerHTML = 
-                        '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
-                    updateZonePerformanceVisualization([], holeNumber);
-                    updateZoneStatsTable([]);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
+                console.log(`Successfully colored zone: ${zone.zone} with ID: ${zoneElement.id}`);
+            } else {
+                console.log(`Skipped zone ${zone.zone} (ID: ${zoneElement.id}) - No positioning defined`);
+            }
+        } else {
+            console.log(`Could not find element for zone "${zone.zone}" on hole ${holeNumber}`);
+        }
+    });
+}
+    
+// Function to fetch hole data from API
+function fetchHoleData(holeNumber) {
+    // Show loading state
+    document.getElementById('score-chart').innerHTML = '<div class="loading-placeholder"><p>Loading data...</p></div>';
+    document.getElementById('rounds-count').textContent = 'loading data...';
+    
+    // Use the existing API endpoint
+    fetch(`/api/hole-stats?hole=${holeNumber}&shot=all&datePeriod=all-time`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response:', data);
+            
+            // Set the round count to 3 (from your SQL dump)
+            let roundCount = 3;
+            
+            // Update round count display
+            document.getElementById('rounds-count').textContent = `using data from ${roundCount} rounds`;
+            
+            if (data && data.zones && data.zones.length > 0) {
+                // Update visualizations - pass holeNumber to all functions
+                updateZonePerformanceVisualization(data.zones, holeNumber);
+                updateZoneStatsTable(data.zones, holeNumber);
+                updateScoreChart(data.zones, holeData[holeNumber].par);
+            } else {
+                // Handle no data case
                 document.getElementById('score-chart').innerHTML = 
-                    `<div class="loading-placeholder"><p>Error: ${error.message}</p></div>`;
-                document.getElementById('distribution-chart').innerHTML = 
-                    `<div class="loading-placeholder"><p>Error: ${error.message}</p></div>`;
-            });
-    }
+                    '<div class="loading-placeholder"><p>No data available for this hole</p></div>';
+                updateZonePerformanceVisualization([], holeNumber);
+                updateZoneStatsTable([], holeNumber);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            document.getElementById('score-chart').innerHTML = 
+                `<div class="loading-placeholder"><p>Error: ${error.message}</p></div>`;
+            document.getElementById('rounds-count').textContent = 'error loading data';
+        });
+}
     
     // Highlight a table row
     function highlightTableRow(zoneName) {
@@ -407,76 +636,96 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Highlight a zone element
-    function highlightZoneElement(zoneId) {
-        const zoneElement = document.getElementById(zoneId);
-        if (!zoneElement) return;
+// Updated highlight zone element function that handles both naming conventions
+function highlightZoneElement(zoneId, holeNumber) {
+    let zoneElement = null;
+    
+    // For hole 1-9, try hyphenated ID first
+    if (parseInt(holeNumber) < 0) {
+        zoneElement = document.getElementById(zoneId);
+    } 
+    // For hole 9+, try non-hyphenated ID first
+    else {
+        // Try without hyphens first
+        const nonHyphenatedId = zoneId.replace(/-/g, '');
+        zoneElement = document.getElementById(nonHyphenatedId);
         
-        // Add temporary class to highlight the zone
-        zoneElement.classList.add('zone-active');
-        zoneElement.classList.add('pulse-animation');
-        
-        // Flash effect
-        setTimeout(() => {
-            zoneElement.classList.remove('zone-active');
-            zoneElement.classList.remove('pulse-animation');
-        }, 1500);
+        // If not found, try the original ID
+        if (!zoneElement) {
+            zoneElement = document.getElementById(zoneId);
+        }
     }
     
-    // Update zone stats table
-    function updateZoneStatsTable(zoneData) {
-        const tableBody = document.querySelector('#zone-stats-table tbody');
-        tableBody.innerHTML = '';
-        
-        if (!zoneData || zoneData.length === 0) {
-            return;
-        }
-        
-        // Sort zones by average score (best to worst)
-        zoneData.sort((a, b) => a.avgScore - b.avgScore);
-        
-        zoneData.forEach(zone => {
-            const row = document.createElement('tr');
-            
-            const zoneCell = document.createElement('td');
-            zoneCell.textContent = zone.zone;
-            
-            const scoreCell = document.createElement('td');
-            scoreCell.className = 'score-cell';
-            scoreCell.textContent = zone.avgScore.toFixed(1);
-            
-            const countCell = document.createElement('td');
-            countCell.textContent = zone.count;
-            
-            const bestCell = document.createElement('td');
-            bestCell.textContent = zone.bestScore;
-            
-            row.appendChild(zoneCell);
-            row.appendChild(scoreCell);
-            row.appendChild(countCell);
-            row.appendChild(bestCell);
-            
-            // Add click handler to highlight the zone
-            row.addEventListener('click', () => {
-                const zoneId = zoneNameToId(zone.zone);
-                highlightZoneElement(zoneId);
-                
-                // Highlight only this row
-                const rows = tableBody.querySelectorAll('tr');
-                rows.forEach(r => {
-                    if (r === row) {
-                        r.classList.add('highlighted');
-                        r.style.backgroundColor = '#e9f7e9';
-                    } else {
-                        r.classList.remove('highlighted');
-                        r.style.backgroundColor = '';
-                    }
-                });
-            });
-            
-            tableBody.appendChild(row);
-        });
+    if (!zoneElement) {
+        console.log(`Could not find zone element with ID: ${zoneId} for hole ${holeNumber}`);
+        return;
     }
+    
+    // Add temporary class to highlight the zone
+    zoneElement.classList.add('zone-active');
+    zoneElement.classList.add('pulse-animation');
+    
+    // Flash effect
+    setTimeout(() => {
+        zoneElement.classList.remove('zone-active');
+        zoneElement.classList.remove('pulse-animation');
+    }, 1500);
+}
+
+// Update the zone stats table click handler
+function updateZoneStatsTable(zoneData, holeNumber) {
+    const tableBody = document.querySelector('#zone-stats-table tbody');
+    tableBody.innerHTML = '';
+    
+    if (!zoneData || zoneData.length === 0) {
+        return;
+    }
+    
+    // Sort zones by average score (best to worst)
+    zoneData.sort((a, b) => a.avgScore - b.avgScore);
+    
+    zoneData.forEach(zone => {
+        const row = document.createElement('tr');
+        
+        const zoneCell = document.createElement('td');
+        zoneCell.textContent = zone.zone;
+        
+        const scoreCell = document.createElement('td');
+        scoreCell.className = 'score-cell';
+        scoreCell.textContent = zone.avgScore.toFixed(1);
+        
+        const countCell = document.createElement('td');
+        countCell.textContent = zone.count;
+        
+        const bestCell = document.createElement('td');
+        bestCell.textContent = zone.bestScore;
+        
+        row.appendChild(zoneCell);
+        row.appendChild(scoreCell);
+        row.appendChild(countCell);
+        row.appendChild(bestCell);
+        
+        // Add click handler to highlight the zone
+        row.addEventListener('click', () => {
+            const zoneId = zoneNameToId(zone.zone, holeNumber);
+            highlightZoneElement(zoneId, holeNumber);
+            
+            // Highlight only this row
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(r => {
+                if (r === row) {
+                    r.classList.add('highlighted');
+                    r.style.backgroundColor = '#e9f7e9';
+                } else {
+                    r.classList.remove('highlighted');
+                    r.style.backgroundColor = '';
+                }
+            });
+        });
+        
+        tableBody.appendChild(row);
+    });
+}
     
     // Update score chart
     function updateScoreChart(zoneData, par) {
@@ -498,58 +747,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const averageScore = totalShots > 0 ? (totalScore / totalShots).toFixed(2) : 'N/A';
         const relativeToPar = totalShots > 0 ? (totalScore / totalShots - par).toFixed(2) : 'N/A';
         
-        // Create a simple chart for now
+        // Create a side-by-side layout
         container.innerHTML = `
-            <div style="padding: 20px; text-align: center;">
-                <h3>Average Score: ${averageScore}</h3>
-                <p>Relative to Par: ${relativeToPar > 0 ? '+' : ''}${relativeToPar}</p>
-                <p>Based on ${totalShots} total shots</p>
-                <div style="margin-top: 20px;">
-                    <p>Best zones (lowest average scores):</p>
-                    <ul style="list-style: none; padding: 0;">
-                        ${zoneData.slice(0, 3).map(zone => 
-                            `<li style="margin: 5px 0;"><strong>${zone.zone}</strong>: ${zone.avgScore.toFixed(1)}</li>`
-                        ).join('')}
-                    </ul>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Update distribution chart
-    function updateDistributionChart(zoneData) {
-        const container = document.getElementById('distribution-chart');
-        
-        if (!zoneData || zoneData.length === 0) {
-            container.innerHTML = '<div class="loading-placeholder"><p>No data available</p></div>';
-            return;
-        }
-        
-        // Calculate total shots
-        const totalShots = zoneData.reduce((sum, zone) => sum + zone.count, 0);
-        
-        // Sort by shot count (most frequent first)
-        const sortedData = [...zoneData].sort((a, b) => b.count - a.count);
-        
-        // Create simple bar chart
-        container.innerHTML = `
-            <div style="padding: 20px;">
-                <h3>Shot Distribution</h3>
-                <div style="margin-top: 20px;">
-                    ${sortedData.slice(0, 5).map(zone => {
-                        const percentage = ((zone.count / totalShots) * 100).toFixed(1);
-                        return `
-                            <div style="margin: 10px 0;">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span>${zone.zone}</span>
-                                    <span>${zone.count} shots (${percentage}%)</span>
-                                </div>
-                                <div style="height: 20px; background-color: #e0e0e0; border-radius: 4px; margin-top: 5px;">
-                                    <div style="height: 100%; width: ${percentage}%; background-color: var(--primary-color); border-radius: 4px;"></div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+            <div style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; gap: 20px;">
+                    <!-- Left column: Average score -->
+                    <div style="flex: 1; background-color: #f8f8f8; padding: 15px; border-radius: 8px;">
+                        <h3 style="margin-top: 0; color: var(--primary-color);">Average Score: ${averageScore}</h3>
+                        <p style="font-weight: 500;">Relative to Par: ${relativeToPar > 0 ? '+' : ''}${relativeToPar}</p>
+                        <p>Based on ${totalShots} total shots</p>
+                    </div>
+                    
+                    <!-- Right column: Best zones -->
+                    <div style="flex: 1; background-color: #f8f8f8; padding: 15px; border-radius: 8px;">
+                        <h3 style="margin-top: 0; color: var(--primary-color);">Best Zones</h3>
+                        <ul style="list-style: none; padding: 0; margin: 10px 0 0 0;">
+                            ${zoneData.slice(0, 3).map(zone => 
+                                `<li style="margin: 5px 0;"><strong>${zone.zone}</strong>: ${zone.avgScore.toFixed(1)}</li>`
+                            ).join('')}
+                        </ul>
+                    </div>
                 </div>
             </div>
         `;
