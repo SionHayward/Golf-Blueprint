@@ -88,66 +88,92 @@
             }
         });
         
-        async function fetchUserData(userId) {
-            try {
-                // Fetch user stats
-                const statsResponse = await fetch(`/api/user-stats/${userId}`);
-                if (statsResponse.ok) {
-                    const stats = await statsResponse.json();
-                    
-                    document.getElementById('rounds-played').textContent = stats.roundsPlayed || 0;
-                    document.getElementById('average-score').textContent = stats.averageScore?.toFixed(1) || 0;
-                    document.getElementById('best-score').textContent = stats.bestScore || 0;
-                }
-                
-                // Fetch recent rounds
-                const roundsResponse = await fetch(`/api/user-rounds/${userId}?limit=5`);
-                if (roundsResponse.ok) {
-                    const rounds = await roundsResponse.json();
-                    populateRecentRounds(rounds);
-                }
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-                // Show demo data if API calls fail
-                showDemoData();
+// Replace the fetchUserData function in profile.html with this improved version
+
+async function fetchUserData(userId) {
+    try {
+        console.log(`Fetching user data for user ID: ${userId}`);
+        
+        // Fetch user stats
+        const statsResponse = await fetch(`/api/user-stats/${userId}`);
+        console.log('Stats response status:', statsResponse.status);
+        
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            console.log('Received stats:', stats);
+            
+            document.getElementById('rounds-played').textContent = stats.roundsPlayed || 0;
+            
+            // Handle averageScore safely
+            if (typeof stats.averageScore === 'number') {
+                document.getElementById('average-score').textContent = stats.averageScore.toFixed(1);
+            } else {
+                document.getElementById('average-score').textContent = '0';
             }
+            
+            document.getElementById('best-score').textContent = stats.bestScore || 0;
+        } else {
+            console.error('Failed to fetch stats:', await statsResponse.text());
+            throw new Error(`Stats API returned ${statsResponse.status}`);
         }
         
-        function populateRecentRounds(rounds) {
-            const roundsList = document.getElementById('recent-rounds-list');
-            roundsList.innerHTML = '';
-            
-            if (!rounds || rounds.length === 0) {
-                roundsList.innerHTML = '<li class="round-item">No rounds recorded yet.</li>';
-                return;
-            }
-            
-            rounds.forEach(round => {
-                const li = document.createElement('li');
-                li.className = 'round-item';
-                
-                const dateSpan = document.createElement('span');
-                dateSpan.className = 'round-date';
-                dateSpan.textContent = new Date(round.datePlayed).toLocaleDateString();
-                
-                const scoreSpan = document.createElement('span');
-                scoreSpan.className = 'round-score';
-                scoreSpan.textContent = `Score: ${round.totalScore}`;
-                
-                const viewBtn = document.createElement('button');
-                viewBtn.className = 'view-button';
-                viewBtn.textContent = 'View';
-                viewBtn.addEventListener('click', () => {
-                    window.location.href = `round-details.html?id=${round.id}`;
-                });
-                
-                li.appendChild(dateSpan);
-                li.appendChild(scoreSpan);
-                li.appendChild(viewBtn);
-                
-                roundsList.appendChild(li);
-            });
+        // Fetch recent rounds
+        const roundsResponse = await fetch(`/api/user-rounds/${userId}?limit=5`);
+        console.log('Rounds response status:', roundsResponse.status);
+        
+        if (roundsResponse.ok) {
+            const rounds = await roundsResponse.json();
+            console.log('Received rounds:', rounds);
+            populateRecentRounds(rounds);
+        } else {
+            console.error('Failed to fetch rounds:', await roundsResponse.text());
+            throw new Error(`Rounds API returned ${roundsResponse.status}`);
         }
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        // Show demo data if API calls fail
+        showDemoData();
+    }
+}
+        
+// Replace the populateRecentRounds function in profile.html
+
+function populateRecentRounds(rounds) {
+    const roundsList = document.getElementById('recent-rounds-list');
+    roundsList.innerHTML = '';
+    
+    if (!rounds || rounds.length === 0) {
+        roundsList.innerHTML = '<li class="round-item">No rounds recorded yet.</li>';
+        return;
+    }
+    
+    rounds.forEach(round => {
+        const li = document.createElement('li');
+        li.className = 'round-item';
+        
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'round-date';
+        dateSpan.textContent = new Date(round.datePlayed).toLocaleDateString();
+        
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'round-score';
+        scoreSpan.textContent = `Score: ${round.totalScore}`;
+        
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'view-button';
+        viewBtn.textContent = 'View';
+        viewBtn.addEventListener('click', () => {
+            // Updated to direct to scorecard.html instead of round-details.html
+            window.location.href = `scorecard.html?id=${round.id}`;
+        });
+        
+        li.appendChild(dateSpan);
+        li.appendChild(scoreSpan);
+        li.appendChild(viewBtn);
+        
+        roundsList.appendChild(li);
+    });
+}
         
         function showDemoData() {
             // Display some demo data if API calls fail

@@ -453,3 +453,229 @@ app.get('/api/round-count', async (req, res) => {
     }
   }
 });
+
+// GET user statistics
+app.get('/api/user-stats/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Calculate total rounds
+    const [roundCount] = await connection.execute(
+      'SELECT COUNT(*) as count FROM Rounds WHERE user_id = ?',
+      [userId]
+    );
+    
+    // Calculate average score
+    const [avgScore] = await connection.execute(
+      `SELECT AVG(rh.score) as average_score 
+       FROM RoundHoles rh
+       JOIN Rounds r ON rh.round_id = r.round_id
+       WHERE r.user_id = ?`,
+      [userId]
+    );
+    
+    // Find best score (lowest total for a round)
+    const [bestScore] = await connection.execute(
+      `SELECT MIN(total_scores.total) as best_score
+       FROM (
+         SELECT r.round_id, SUM(rh.score) as total
+         FROM Rounds r
+         JOIN RoundHoles rh ON r.round_id = rh.round_id
+         WHERE r.user_id = ?
+         GROUP BY r.round_id
+       ) as total_scores`,
+      [userId]
+    );
+    
+    res.json({
+      roundsPlayed: roundCount[0].count || 0,
+      averageScore: avgScore[0].average_score || 0,
+      bestScore: bestScore[0].best_score || 0
+    });
+    
+  } catch (error) {
+    console.error('Error fetching user statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch user statistics' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// Replace the user rounds endpoint with this ultra-simplified version
+
+// GET user rounds (fixed version)
+app.get('/api/user-rounds/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  const limit = parseInt(req.query.limit) || 5;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    console.log(`Fetching rounds for user ${userId} with limit ${limit}`);
+    
+    // Use LIMIT directly in the query instead of as a parameter
+    // This avoids the "Incorrect arguments to mysqld_stmt_execute" error
+    const [rounds] = await connection.execute(
+      `SELECT round_id, date_played, course_id FROM Rounds WHERE user_id = ? ORDER BY date_played DESC LIMIT ${limit}`,
+      [userId]
+    );
+    
+    console.log(`Found ${rounds.length} rounds`);
+    
+    // Process each round manually
+    const processedRounds = [];
+    
+    for (const round of rounds) {
+      console.log(`Processing round ${round.round_id}`);
+      
+      // Get scores for this round
+      const [scoreResults] = await connection.execute(
+        'SELECT SUM(score) as total FROM RoundHoles WHERE round_id = ?',
+        [round.round_id]
+      );
+      
+      const totalScore = scoreResults[0]?.total || 0;
+      console.log(`Total score for round ${round.round_id}: ${totalScore}`);
+      
+      // Get course name
+      const [courseResults] = await connection.execute(
+        'SELECT course_name FROM Courses WHERE course_id = ?',
+        [round.course_id]
+      );
+      
+      const courseName = courseResults[0]?.course_name || 'Unknown Course';
+      
+      processedRounds.push({
+        id: round.round_id,
+        datePlayed: round.date_played,
+        courseName: courseName,
+        totalScore: parseInt(totalScore) // Ensure totalScore is a number
+      });
+    }
+    
+    console.log('Final processed rounds:', processedRounds);
+    res.json(processedRounds);
+    
+  } catch (error) {
+    console.error('Error in user rounds endpoint:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch user rounds', 
+      details: error.message,
+      stack: error.stack
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// GET round scorecard
+app.get('/api/round-scorecard/:roundId', async (req, res) => {
+  const roundId = req.params.roundId;
+  
+  if (!roundId) {
+    return res.status(400).json({ error: 'Round ID is required' });
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Get round information
+    const [roundResults] = await connection.execute(
+      `SELECT 
+         r.round_id,
+         r.date_played,
+         r.user_id,
+         c.course_name,
+         r.weather_conditions,
+         r.notes
+       FROM Rounds r
+       LEFT JOIN Courses c ON r.course_id = c.course_id
+       WHERE r.round_id = ?`,
+      [roundId]
+    );
+    
+    if (roundResults.length === 0) {
+      return res.status(404).json({ error: 'Round not found' });
+    }
+    
+    const roundInfo = roundResults[0];
+    
+    // Get holes data with explicit putts handling
+    const [holesResults] = await connection.execute(
+      `SELECT 
+         rh.round_hole_id,
+         rh.hole_id,
+         h.hole_number,
+         h.par,
+         h.distance_yards,
+         rh.score,
+         IFNULL(rh.putts, 0) as putts,
+         rh.fairway_hit,
+         rh.green_in_regulation
+       FROM RoundHoles rh
+       JOIN Holes h ON rh.hole_id = h.hole_id
+       WHERE rh.round_id = ?
+       ORDER BY h.hole_number`,
+      [roundId]
+    );
+    
+    // Calculate total score
+    let totalScore = 0;
+    holesResults.forEach(hole => {
+      totalScore += hole.score;
+    });
+    
+    // Format holes data
+    const holes = holesResults.map(hole => ({
+      holeNumber: hole.hole_number,
+      par: hole.par,
+      distance: hole.distance_yards,
+      score: hole.score,
+      putts: hole.putts,
+      fairwayHit: hole.fairway_hit === 1,
+      greenInRegulation: hole.green_in_regulation === 1
+    }));
+    
+    // Build response
+    const response = {
+      id: roundInfo.round_id,
+      userId: roundInfo.user_id,
+      datePlayed: roundInfo.date_played,
+      courseName: roundInfo.course_name || 'Unknown Course',
+      weatherConditions: roundInfo.weather_conditions,
+      notes: roundInfo.notes,
+      totalScore: totalScore,
+      holes: holes
+    };
+    
+    res.json(response);
+    
+  } catch (error) {
+    console.error('Error fetching round scorecard:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch round scorecard', 
+      details: error.message 
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});

@@ -575,13 +575,29 @@ function updateZonePerformanceVisualization(zoneData, holeNumber) {
 }
     
 // Function to fetch hole data from API
+// Function to fetch hole data from API
 function fetchHoleData(holeNumber) {
     // Show loading state
     document.getElementById('score-chart').innerHTML = '<div class="loading-placeholder"><p>Loading data...</p></div>';
     document.getElementById('rounds-count').textContent = 'loading data...';
     
-    // Use the existing API endpoint
-    fetch(`/api/hole-stats?hole=${holeNumber}&shot=all&datePeriod=all-time`)
+    // First, fetch the round count for this hole
+    fetch(`/api/round-count?hole=${holeNumber}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(countData => {
+            const roundCount = countData.count;
+            
+            // Update round count display
+            document.getElementById('rounds-count').textContent = `using data from ${roundCount} rounds`;
+            
+            // Then fetch the hole statistics
+            return fetch(`/api/hole-stats?hole=${holeNumber}&shot=all&datePeriod=all-time`);
+        })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`API error: ${response.status}`);
@@ -590,12 +606,6 @@ function fetchHoleData(holeNumber) {
         })
         .then(data => {
             console.log('API response:', data);
-            
-            // Set the round count to 3 (from your SQL dump)
-            let roundCount = 3;
-            
-            // Update round count display
-            document.getElementById('rounds-count').textContent = `using data from ${roundCount} rounds`;
             
             if (data && data.zones && data.zones.length > 0) {
                 // Update visualizations - pass holeNumber to all functions

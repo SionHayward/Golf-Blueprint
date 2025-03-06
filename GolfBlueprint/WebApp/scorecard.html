@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Scorecard - The Golf Blueprint</title>
+    <link rel="stylesheet" href="styles/styles.css">
+
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">The Golf Blueprint</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="round-details.html" class="nav-link">Record Round</a></li>
+                <li><a href="shot-analysis.html" class="nav-link">Shot Analysis</a></li>
+                <li id="auth-link"><a href="login.html" class="nav-link">Login</a></li>
+                <li id="profile-link" style="display: none;"><a href="profile.html" class="nav-link">My Profile</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Scorecard Container -->
+    <div class="scorecard-container">
+        <div class="scorecard-header">
+            <div class="round-info">
+                <h1>Round Scorecard</h1>
+                <p id="round-date">Date: Loading...</p>
+                <p id="course-name">Course: Loading...</p>
+            </div>
+            <div class="round-score">
+                <span id="total-score">--</span>
+                <span id="score-to-par" class="score-to-par"></span>
+            </div>
+        </div>
+        
+        <div class="scorecard-summary">
+            <div class="summary-item">
+                <h3 id="summary-pars">0</h3>
+                <p>Pars</p>
+            </div>
+            <div class="summary-item">
+                <h3 id="summary-birdies">0</h3>
+                <p>Birdies</p>
+            </div>
+            <div class="summary-item">
+                <h3 id="summary-bogeys">0</h3>
+                <p>Bogeys</p>
+            </div>
+            <div class="summary-item">
+                <h3 id="summary-doubles">0</h3>
+                <p>Double+ Bogeys</p>
+            </div>
+        </div>
+        
+        <table class="scorecard-table">
+            <thead>
+                <tr>
+                    <th>Hole</th>
+                    <th>Par</th>
+                    <th>Score</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="scorecard-body">
+                <!-- Scorecard rows will be populated dynamically -->
+                <tr>
+                    <td colspan="4" class="not-available">Loading scorecard data...</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td>Total</td>
+                    <td id="total-par">--</td>
+                    <td id="table-total-score">--</td>
+                    <td id="total-over-under">--</td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <a href="profile.html" class="back-button">Back to Profile</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize auth navigation
+            updateAuthNavigation();
+            
+            // Get round ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roundId = urlParams.get('id');
+            
+            if (roundId) {
+                // Fetch round data
+                fetchRoundData(roundId);
+            } else {
+                // If no round ID is provided, show error
+                document.querySelector('.scorecard-container').innerHTML = `
+                    <div class="error-message">
+                        <h2>Error: No round specified</h2>
+                        <p>Please select a round from your profile page.</p>
+                        <a href="profile.html" class="back-button">Back to Profile</a>
+                    </div>
+                `;
+            }
+        });
+        
+        async function fetchRoundData(roundId) {
+            try {
+                console.log(`Fetching data for round ${roundId}`);
+                const response = await fetch(`/api/round-scorecard/${roundId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch round data: ${response.status}`);
+                }
+                
+                const roundData = await response.json();
+                console.log("Round data received:", roundData);
+                
+                // Populate scorecard
+                populateScorecard(roundData);
+                
+            } catch (error) {
+                console.error('Error fetching round data:', error);
+                document.querySelector('.scorecard-container').innerHTML = `
+                    <div class="error-message">
+                        <h2>Error loading scorecard</h2>
+                        <p>${error.message}</p>
+                        <a href="profile.html" class="back-button">Back to Profile</a>
+                    </div>
+                `;
+            }
+        }
+        
+        function populateScorecard(roundData) {
+            console.log("Populating scorecard with data");
+            
+            // Calculate total par first for the course
+            let coursePar = 0;
+            roundData.holes.forEach(hole => {
+                coursePar += hole.par;
+            });
+            
+            // Update header information
+            document.getElementById('round-date').textContent = `Date: ${new Date(roundData.datePlayed).toLocaleDateString()}`;
+            document.getElementById('course-name').textContent = `Course: ${roundData.courseName}`;
+            document.getElementById('total-score').textContent = roundData.totalScore;
+            
+            // Calculate and display score relative to par
+            const scoreToPar = roundData.totalScore - coursePar;
+            const scoreToParElement = document.getElementById('score-to-par');
+            
+            // Set class based on score relative to par
+            let scoreToParClass = 'par';
+            if (scoreToPar > 0) scoreToParClass = 'over-par';
+            if (scoreToPar < 0) scoreToParClass = 'under-par';
+            
+            scoreToParElement.textContent = formatOverUnder(scoreToPar);
+            scoreToParElement.className = `score-to-par ${scoreToParClass}`;
+            
+            // Clear loading placeholder
+            const scorecardBody = document.getElementById('scorecard-body');
+            scorecardBody.innerHTML = '';
+            
+            // Calculate statistics
+            let totalPar = 0;
+            let pars = 0;
+            let birdies = 0;
+            let bogeys = 0;
+            let doubles = 0; // Track double bogeys or worse
+            let runningTotal = 0; // Track running total relative to par
+            
+            // Populate hole rows
+            roundData.holes.forEach(hole => {
+                const row = document.createElement('tr');
+                
+                // Calculate over/under par for this hole
+                const overUnder = hole.score - hole.par;
+                
+                // Update running total
+                runningTotal += overUnder;
+                
+                // Set class for running total
+                let totalClass = 'par';
+                if (runningTotal > 0) totalClass = 'over-par';
+                if (runningTotal < 0) totalClass = 'under-par';
+                
+                // Update statistics
+                totalPar += hole.par;
+                
+                if (overUnder === 0) pars++;
+                else if (overUnder < 0) birdies++;
+                else if (overUnder === 1) bogeys++;
+                else if (overUnder >= 2) doubles++; // Count double bogeys or worse
+                
+                row.innerHTML = `
+                    <td class="hole-number">${hole.holeNumber}</td>
+                    <td>${hole.par}</td>
+                    <td>${hole.score}</td>
+                    <td class="${totalClass}">${formatOverUnder(runningTotal)}</td>
+                `;
+                
+                scorecardBody.appendChild(row);
+            });
+            
+            // Update totals
+            document.getElementById('total-par').textContent = totalPar;
+            document.getElementById('table-total-score').textContent = roundData.totalScore;
+            document.getElementById('total-over-under').textContent = formatOverUnder(roundData.totalScore - totalPar);
+            
+            // Update summary
+            document.getElementById('summary-pars').textContent = pars;
+            document.getElementById('summary-birdies').textContent = birdies;
+            document.getElementById('summary-bogeys').textContent = bogeys;
+            document.getElementById('summary-doubles').textContent = doubles;
+        }
+        
+        function formatOverUnder(value) {
+            if (value === 0) return 'E';
+            if (value > 0) return `+${value}`;
+            return value;
+        }
+        
+        // Auth management function
+        function updateAuthNavigation() {
+            const authLinkElement = document.getElementById('auth-link');
+            const profileLinkElement = document.getElementById('profile-link');
+            
+            // Check if user data exists in localStorage
+            const userData = localStorage.getItem('user');
+            
+            if (userData) {
+                // User is logged in
+                try {
+                    const user = JSON.parse(userData);
+                    
+                    // Update auth link to logout
+                    authLinkElement.innerHTML = '<a href="#" class="nav-link" onclick="logout()">Logout</a>';
+                    
+                    // Show profile link
+                    profileLinkElement.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Error parsing user data:', error);
+                    // If there's an error, treat as logged out
+                    authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+                    profileLinkElement.style.display = 'none';
+                }
+            } else {
+                // User is logged out
+                authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+                profileLinkElement.style.display = 'none';
+            }
+        }
+        
+        // Function to handle logout
+        function logout() {
+            // Remove user data from localStorage
+            localStorage.removeItem('user');
+            
+            // Redirect to login page
+            window.location.href = 'login.html';
+            
+            return false; // Prevent default link behavior
+        }
+    </script>
+    <script src="scripts/auth.js"></script>
+</body>
+</html>
