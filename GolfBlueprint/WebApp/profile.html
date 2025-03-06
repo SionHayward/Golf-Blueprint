@@ -37,11 +37,7 @@
                 <p>Rounds Played</p>
             </div>
             <div class="stat-card">
-                <h3 id="average-score">0</h3>
-                <p>Average Score</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="best-score">0</h3>
+                <h3 id="best-score-display">0</h3>
                 <p>Best Score</p>
             </div>
         </div>
@@ -88,8 +84,6 @@
             }
         });
         
-// Replace the fetchUserData function in profile.html with this improved version
-
 async function fetchUserData(userId) {
     try {
         console.log(`Fetching user data for user ID: ${userId}`);
@@ -104,14 +98,24 @@ async function fetchUserData(userId) {
             
             document.getElementById('rounds-played').textContent = stats.roundsPlayed || 0;
             
-            // Handle averageScore safely
-            if (typeof stats.averageScore === 'number') {
-                document.getElementById('average-score').textContent = stats.averageScore.toFixed(1);
+            // Update best score and add score to par
+            if (stats.bestScore) {
+                const bestScore = stats.bestScore;
+                let scoreDisplay = bestScore.toString();
+                
+                // Add score to par if available
+                if (stats.bestScorePar) {
+                    const scoreToPar = bestScore - stats.bestScorePar;
+                    const formattedPar = formatOverUnder(scoreToPar);
+                    
+                    // Format as "67(-4)" or "78(+6)" etc.
+                    scoreDisplay = `${bestScore} (${formattedPar})`;
+                }
+                
+                document.getElementById('best-score-display').textContent = scoreDisplay;
             } else {
-                document.getElementById('average-score').textContent = '0';
+                document.getElementById('best-score-display').textContent = '0';
             }
-            
-            document.getElementById('best-score').textContent = stats.bestScore || 0;
         } else {
             console.error('Failed to fetch stats:', await statsResponse.text());
             throw new Error(`Stats API returned ${statsResponse.status}`);
@@ -136,8 +140,6 @@ async function fetchUserData(userId) {
     }
 }
         
-// Replace the populateRecentRounds function in profile.html
-
 function populateRecentRounds(rounds) {
     const roundsList = document.getElementById('recent-rounds-list');
     roundsList.innerHTML = '';
@@ -175,63 +177,69 @@ function populateRecentRounds(rounds) {
     });
 }
         
-        function showDemoData() {
-            // Display some demo data if API calls fail
-            document.getElementById('rounds-played').textContent = '12';
-            document.getElementById('average-score').textContent = '87.5';
-            document.getElementById('best-score').textContent = '82';
-            
-            const demoRounds = [
-                { id: 1, datePlayed: '2025-02-15', totalScore: 85 },
-                { id: 2, datePlayed: '2025-02-08', totalScore: 88 },
-                { id: 3, datePlayed: '2025-01-25', totalScore: 82 }
-            ];
-            
-            populateRecentRounds(demoRounds);
-        }
+function showDemoData() {
+    // Display some demo data if API calls fail
+    document.getElementById('rounds-played').textContent = '12';
+    document.getElementById('best-score-display').textContent = '67 (-4)';
+    
+    const demoRounds = [
+        { id: 1, datePlayed: '2025-02-15', totalScore: 85 },
+        { id: 2, datePlayed: '2025-02-08', totalScore: 88 },
+        { id: 3, datePlayed: '2025-01-25', totalScore: 82 }
+    ];
+    
+    populateRecentRounds(demoRounds);
+}
+
+// Format the over/under par value like in scorecard.html
+function formatOverUnder(value) {
+    if (value === 0) return 'E';
+    if (value > 0) return `+${value}`;
+    return value;
+}
         
-        // Auth management function
-        function updateAuthNavigation() {
-            const authLinkElement = document.getElementById('auth-link');
-            const profileLinkElement = document.getElementById('profile-link');
+// Auth management function
+function updateAuthNavigation() {
+    const authLinkElement = document.getElementById('auth-link');
+    const profileLinkElement = document.getElementById('profile-link');
+    
+    // Check if user data exists in localStorage
+    const userData = localStorage.getItem('user');
+    
+    if (userData) {
+        // User is logged in
+        try {
+            const user = JSON.parse(userData);
             
-            // Check if user data exists in localStorage
-            const userData = localStorage.getItem('user');
+            // Update auth link to logout
+            authLinkElement.innerHTML = '<a href="#" class="nav-link" onclick="logout()">Logout</a>';
             
-            if (userData) {
-                // User is logged in
-                try {
-                    const user = JSON.parse(userData);
-                    
-                    // Update auth link to logout
-                    authLinkElement.innerHTML = '<a href="#" class="nav-link" onclick="logout()">Logout</a>';
-                    
-                    // Show profile link
-                    profileLinkElement.style.display = 'block';
-                    
-                } catch (error) {
-                    console.error('Error parsing user data:', error);
-                    // If there's an error, treat as logged out
-                    authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
-                    profileLinkElement.style.display = 'none';
-                }
-            } else {
-                // User is logged out
-                authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
-                profileLinkElement.style.display = 'none';
-            }
+            // Show profile link
+            profileLinkElement.style.display = 'block';
+            
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            // If there's an error, treat as logged out
+            authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+            profileLinkElement.style.display = 'none';
         }
+    } else {
+        // User is logged out
+        authLinkElement.innerHTML = '<a href="login.html" class="nav-link">Login</a>';
+        profileLinkElement.style.display = 'none';
+    }
+}
         
-        // Function to handle logout
-        function logout() {
-            // Remove user data from localStorage
-            localStorage.removeItem('user');
-            
-            // Redirect to login page
-            window.location.href = 'login.html';
-            
-            return false; // Prevent default link behavior
-        }
+// Function to handle logout
+function logout() {
+    // Remove user data from localStorage
+    localStorage.removeItem('user');
+    
+    // Redirect to login page
+    window.location.href = 'login.html';
+    
+    return false; // Prevent default link behavior
+}
     </script>
     <script src="scripts/auth.js"></script>
 </body>
