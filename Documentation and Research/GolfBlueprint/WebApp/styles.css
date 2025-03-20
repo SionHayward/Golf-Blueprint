@@ -1,0 +1,226 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f0f7f0;
+}
+
+/* Navigation Styles */
+.navbar {
+    background-color: #57995a;
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    color: white;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #a8d4aa;
+}
+
+/* Welcome Section Styles */
+.welcome-section {
+    text-align: center;
+    padding: 4rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.welcome-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+.welcome-text {
+    font-size: 1.25rem;
+    color: #4b5563;
+    margin-bottom: 2rem;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: #57995a;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #468149;
+}
+
+/* About Section Styles */
+.about-section {
+    background-color: white;
+    padding: 4rem 1rem;
+}
+
+.section-title {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 3rem;
+    color: #1f2937;
+}
+
+.about-text {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    color: #4b5563;
+}
+
+/* Footer Styles */
+.footer {
+    background-color: #3c6a3e;
+    color: white;
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+/* Green View Styles */
+.green-svg-container {
+    display: inline-block;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(87, 153, 90, 0.2);
+}
+
+.green-svg {
+    display: block;
+    cursor: crosshair !important;
+}
+
+embed {
+    cursor: crosshair !important;
+}
+
+.hole-svg {
+    display: block;
+}
+
+.hidden {
+    display: none;
+}
+
+.instruction-text {
+    font-size: 1.2rem;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.score-input {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.hole-section {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.hole-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.hole-info {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+}
+
+.submit-button, .next-hole-button {
+    background-color: #57995a;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submit-button:hover, .next-hole-button:hover {
+    background-color: #468149;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .nav-links {
+        gap: 1rem;
+    }
+
+    .welcome-title {
+        font-size: 2rem;
+    }
+}
