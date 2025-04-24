@@ -1,9 +1,27 @@
 # The Golf Blueprint
 
-The Golf Blueprint is a data-driven golf course management tool specifically designed for The Kendleshire Golf Club. Research revealed 80% of amateur golfers have average or worse course management understanding, despite this skill being crucial for improved scoring. The system addresses this gap by collecting and analyzing shot data to generate strategic insights.
-The solution features SVG recreations of all 18 holes where users mark their shot locations. A MySQL database stores this information, while custom algorithms transform collected data into color-coded heatmap visualizations showing optimal playing zones and areas to avoid.
-Built using Agile methodology with client-server architecture, the system achieved 100% implementation of critical requirements. User benefits include identifying trouble spots, learning strategic approaches, and making smarter decisions on every hole—effectively bringing professional-level analytics to amateur golfers.
+A data-driven golf course management tool providing analytics-based insights for The Kendleshire Golf Club.
 
-## Description
+## Project Overview
 
-An in-depth paragraph about your project and overview of use.
+The Golf Blueprint transforms how amateur golfers approach course management at The Kendleshire Golf Club. By collecting and analyzing shot data from multiple players, the system provides visual heatmaps and strategic recommendations to help golfers make better decisions, avoid trouble areas, and ultimately lower their scores.
+
+Research found 80% of amateur golfers have average or worse understanding of course management, despite this being a crucial factor in performance improvement. This tool bridges that knowledge gap through accessible data visualization.
+
+## Features
+
+- **Interactive Hole Visualizations**: Detailed SVG recreations of all 18 holes at The Kendleshire
+- **Shot Data Collection System**: Simple interface for recording precise shot locations
+- **Heatmap Analytics**: Color-coded visualizations showing optimal target areas and zones to avoid
+- **User Profiles**: Track personal progress and round history
+- **Zone-Specific Insights**: Statistical breakdown of performance in different course areas
+
+## Technologies Used
+
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Backend**: Node.js with Express
+- **Database**: MySQL
+- **Architecture**: Client-Server following MVC pattern
+- **Development Methodology**: Agile (Kanban)
+- **Design Tools**: Inkscape for SVG creation
+- **Data Source**: Google Earth satellite imagery for initial hole mapping
