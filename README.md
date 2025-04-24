@@ -35,7 +35,7 @@ Research found 80% of amateur golfers have average or worse understanding of cou
 5. Submit your data to contribute to the analytics
 6. Visit the "Hole Analysis" section to view heatmaps and strategy recommendations
 
-7. ## Development
+## Development
 
 The system was developed through the following process:
 
