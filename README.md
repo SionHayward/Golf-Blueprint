@@ -1,6 +1,6 @@
 # The Golf Blueprint
 
-A data-driven golf course management tool providing analytics-based insights for The Kendleshire Golf Club.
+A data-driven golf course management tool providing analytics-based insights for members of The Kendleshire Golf Club.
 
 ## Project Overview
 
